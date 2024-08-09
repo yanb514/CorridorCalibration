@@ -1,0 +1,41 @@
+
+
+<routes>
+   <vType id="car"
+        vClass="passenger" length="5" minGap="1" accel="3.5" decel="2.2" tau="1.3"
+        maxSpeed="30" carFollowModel="IDM" laneChangeModel="LC2013"
+    />
+
+    <vType id="slowcar"
+       speedFactor="norm(0.2,0.01)" 
+    />
+
+    <route id="route_0" edges="E0 E1 E2" />
+
+
+    <flow id="carflow1" type="car" color="1,1,0" begin="0" end="30" period="1.2" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow>
+    <flow id="carflow2" type="car" color="1,0,0" begin="30" period="5" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow>
+        <!-- <flow id="carflow3" type="car" begin="60" end="90" vehsPerHour="5000" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow>
+        <flow id="carflow4" type="car" begin="90" end="120" vehsPerHour="1000" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow>
+        <flow id="carflow5" type="car" begin="120" end="150" vehsPerHour="5000" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow>
+        <flow id="carflow6" type="car" begin="150" end="180" vehsPerHour="1000" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow> -->
+    <!-- <flow id="carflow1" type="vehDist" begin="0" end="120" vehsPerHour="5000" route="route_0" departLane="random" departSpeed="speedLimit">
+    </flow> -->
+
+    <!-- <flow id="carflow2" color="1,0,0" type="slowcar" begin="0" end="60" vehsPerHour="3000" route="route_0" departLane="random" departSpeed="random">
+        <randomRoute probability="1" />
+    </flow> -->
+
+    <!-- <flow id="carflow3" color="1,1,0" type="car" begin="0" end="60" vehsPerHour="1000" route="route_1" departSpeed="random">
+        <randomRoute probability="1" />
+    </flow> -->
+    <!-- <vehicle id="0" type="car" route="route_1" depart="0"/> -->
+
+</routes>
+

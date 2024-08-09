@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2024-06-27 09:37:51 by Eclipse SUMO sumo Version 1.19.0
+-->
+
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="I24_scenario.net.xml"/>
+        <route-files value="I24_scenario.rou.xml"/>
+        <additional-files value="I24_RDS.add.xml"/>
+    </input>
+
+    <!-- <output>
+        <edgedata-output value="by_edge.xml"/>
+        <lanedata-output value="by_lane.xml"/>
+        <statistic-output value="stats.xml"/>
+    </output> -->
+
+    <time>
+        <step-length value="0.5"/>
+    </time>
+
+</configuration>

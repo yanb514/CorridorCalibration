@@ -1,0 +1,18 @@
+
+<configuration>
+
+    <input>
+        <net-file value="onramp.net.xml"/>
+        <route-files value="onramp_gt.rou.xml"/>
+        <additional-files value="detectors_gt.add.xml"/>
+    </input>
+
+    <time>
+        <begin value="0"/>
+        <end value="480"/>
+        <step-length value="0.1"/>
+    </time>
+	<gui_only>
+		<start value="t"/>
+	</gui_only>
+</configuration>

@@ -1,0 +1,12 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <!-- 1 edge overlap (5/1to6/1 is needed to make the rerouter work -->
+    <!-- end dominates simulation time over the ones in sumocfg -->
+    <route id="circle" edges="a b a"/>
+    <rerouter id="rerouter" edges="a">
+        <interval begin="0" end="2000">
+            <routeProbReroute id="circle"/>
+        </interval>
+    </rerouter>
+
+    <e1Detector id="det_0" lane="a_0" pos="50" freq="50" file="det.out.xml" />
+</additional>

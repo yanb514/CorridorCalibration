@@ -1,0 +1,19 @@
+
+
+<configuration>
+    <input>
+        <net-file value="NGSIM_I-80.net.xml"/>
+        <route-files value="NGSIM_I-80.rou.xml"/>
+        <additional-files value="vTypeDistributions.add.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <step-length value="0.1"/>
+    </time>
+    <processing>
+        <collision.action value="none"/>
+    </processing>
+    <gui_only>
+        <start value="t"/>
+    </gui_only>
+</configuration>

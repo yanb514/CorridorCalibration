@@ -1,0 +1,8 @@
+<additional>
+    <!-- <variableSpeedSign id="vss0" lanes="E0_0">
+        <step time="0" speed="20"/>
+    </variableSpeedSign> -->
+    <speedSign id="speed_sign_1" lane="E0_0" pos="1000" speed="100"/>
+</additional>
+
+

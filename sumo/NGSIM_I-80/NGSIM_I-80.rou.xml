@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2024-04-30 18:06:08 by Eclipse SUMO duarouter Version 1.10.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="XXX.net.xml"/>
+        <route-files value="XXX.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="XXX.rou.xml"/>
+        <alternatives-output value="XXX.rou.alt.xml"/>
+    </output>
+
+    <report>
+        <ignore-errors value="true"/>
+    </report>
+
+</configuration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <route id="route_main" edges="161453273 5165991 518298699 821503308 123741236"/>
+    <route id="route_offramp" edges="161453273 5165991 518298699 6324048"/>
+    <route id="route_onramp" edges="393504292 6318462 5165991 518298699 821503308 123741236"/>
+    <route id="route_onramp_offramp" edges="393504292 6318462 5165991 518298699 6324048"/>
+
+
+    <!-- <vehicle id="0" route="route_main" depart="0"/> -->
+    <flow id="carflow1" type="vehDist" begin="0" end="30" vehsPerHour="5000" route="route_main" departLane="random" departSpeed="speedLimit">
+    </flow>
+
+    <!-- <vehicle id="0" depart="0.00">
+        <route edges="518298699 821503308 123741236"/>
+    </vehicle> -->
+    <!-- <vehicle id="1" depart="0.02">
+        <route edges="393504292 6318462 5165991"/>
+    </vehicle>
+    <vehicle id="2" depart="0.04">
+        <route edges="6318462 5165991 518298699 6324048"/>
+    </vehicle>
+    <vehicle id="3" depart="0.06">
+        <route edges="821503308 123741236"/>
+    </vehicle>
+    <vehicle id="4" depart="0.08">
+        <route edges="5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="5" depart="0.10">
+        <route edges="393504292 6318462"/>
+    </vehicle>
+    <vehicle id="6" depart="0.12">
+        <route edges="161453273 5165991"/>
+    </vehicle>
+    <vehicle id="8" depart="0.16">
+        <route edges="393504292 6318462"/>
+    </vehicle>
+    <vehicle id="9" depart="0.18">
+        <route edges="6318462 5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="10" depart="0.20">
+        <route edges="6318462 5165991 518298699 6324048"/>
+    </vehicle>
+    <vehicle id="11" depart="0.22">
+        <route edges="5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="12" depart="0.24">
+        <route edges="161453273 5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="14" depart="0.28">
+        <route edges="6318462 5165991 518298699 6324048"/>
+    </vehicle>
+    <vehicle id="15" depart="0.30">
+        <route edges="518298699 821503308"/>
+    </vehicle>
+    <vehicle id="16" depart="0.32">
+        <route edges="6318462"/>
+    </vehicle>
+    <vehicle id="18" depart="0.36">
+        <route edges="6318462 5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="19" depart="0.38">
+        <route edges="393504292 6318462 5165991"/>
+    </vehicle>
+    <vehicle id="20" depart="0.40">
+        <route edges="161453273 5165991"/>
+    </vehicle>
+    <vehicle id="21" depart="0.42">
+        <route edges="161453273 5165991"/>
+    </vehicle>
+    <vehicle id="22" depart="0.44">
+        <route edges="5165991"/>
+    </vehicle>
+    <vehicle id="23" depart="0.46">
+        <route edges="393504292 6318462 5165991 518298699 821503308"/>
+    </vehicle>
+    <vehicle id="25" depart="0.50">
+        <route edges="393504292 6318462 5165991 518298699 6324048"/>
+    </vehicle>
+    <vehicle id="26" depart="0.52">
+        <route edges="161453273 5165991 518298699"/>
+    </vehicle>
+    <vehicle id="28" depart="0.56">
+        <route edges="518298699 6324048"/>
+    </vehicle>
+    <vehicle id="30" depart="0.60">
+        <route edges="393504292 6318462 5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="31" depart="0.62">
+        <route edges="393504292 6318462 5165991"/>
+    </vehicle>
+    <vehicle id="32" depart="0.64">
+        <route edges="393504292 6318462 5165991 518298699 821503308"/>
+    </vehicle>
+    <vehicle id="33" depart="0.66">
+        <route edges="393504292 6318462 5165991"/>
+    </vehicle>
+    <vehicle id="34" depart="0.68">
+        <route edges="518298699 821503308"/>
+    </vehicle>
+    <vehicle id="35" depart="0.70">
+        <route edges="5165991"/>
+    </vehicle>
+    <vehicle id="37" depart="0.74">
+        <route edges="161453273 5165991 518298699 821503308 123741236"/>
+    </vehicle>
+    <vehicle id="39" depart="0.78">
+        <route edges="6318462 5165991 518298699"/>
+    </vehicle>
+    <vehicle id="40" depart="0.80">
+        <route edges="161453273 5165991 518298699"/>
+    </vehicle>
+    <vehicle id="42" depart="0.84">
+        <route edges="821503308"/>
+    </vehicle>
+    <vehicle id="43" depart="0.86">
+        <route edges="161453273 5165991 518298699 6324048"/>
+    </vehicle>
+    <vehicle id="44" depart="0.88">
+        <route edges="6318462"/>
+    </vehicle>
+    <vehicle id="45" depart="0.90">
+        <route edges="393504292 6318462"/>
+    </vehicle>
+    <vehicle id="46" depart="0.92">
+        <route edges="161453273 5165991 518298699"/>
+    </vehicle>
+    <vehicle id="47" depart="0.94">
+        <route edges="5165991 518298699 821503308"/>
+    </vehicle>
+    <vehicle id="48" depart="0.96">
+        <route edges="821503308"/>
+    </vehicle>
+    <vehicle id="49" depart="0.98">
+        <route edges="393504292 6318462"/>
+    </vehicle> -->
+</routes>
