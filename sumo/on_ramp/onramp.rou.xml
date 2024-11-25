@@ -1,7 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <routes>
-    <vType id="trial" length="4.3" carFollowModel="IDM" maxSpeed="32.33" minGap="2.5" accel="2.6" decel="4.5" tau="1.0" laneChangeModel="LC2013" lcStrategic="1.0" lcCooperative="1.0" lcAssertive="0.5" lcSpeedGain="1.0" lcKeepRight="1.0" lcOvertakeRight="0" />
-	<route id="ramp" edges="ramp E2 E4" />
+    
+    
+    
+	<vType id="trial" carFollowModel="Test" maxSpeed="32.33" minGap="2.5" accel="2.6" decel="4.5" tau="1.0" lcStrategic="1.0" lcCooperative="1.0" lcAssertive="0.5" lcSpeedGain="1.0" lcKeepRight="1.0" />
+
+    <route id="ramp" edges="ramp E2 E4" />
 	<route id="mainlane" edges="E0 E1 E2 E4 " />
 	
     <flow id="mainlane" type="trial" begin="0" end="300" vehsPerHour="5000" route="mainlane" departLane="random" departSpeed="desired" />

@@ -1,0 +1,13 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <e1Detector id="upstream_0" lane="E1_1" pos="300" freq="50" file="det_upstream_0.out.xml" />
+    <e1Detector id="upstream_1" lane="E1_0" pos="300" freq="50" file="det_upstream_1.out.xml" />
+
+    <e1Detector id="ramp_0" lane="ramp_0" pos="150" freq="50" file="det_ramp_0.out.xml" />
+
+    <e1Detector id="merge_0" lane="E2_2" pos="150" freq="50" file="det_merge_0.out.xml" />
+    <e1Detector id="merge_1" lane="E2_1" pos="150" freq="50" file="det_merge_1.out.xml" />
+    <e1Detector id="merge_2" lane="E2_0" pos="150" freq="50" file="det_merge_2.out.xml" />
+
+    <e1Detector id="downstream_0" lane="E4_1" pos="50" freq="50" file="det_downstream_0.out.xml" />
+    <e1Detector id="downstream_1" lane="E4_0" pos="50" freq="50" file="det_downstream_1.out.xml" />
+</additional>

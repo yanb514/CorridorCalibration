@@ -1,3 +1,6 @@
+"""
+This file contains all the functions for visualization
+"""
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
@@ -10,9 +13,25 @@ import seaborn as sns
 import matplotlib.dates as mdates
 import datetime
 import csv
+import shutil
+from xml.dom import minidom
 
-# Path to your data file
+
 def scatter_time_space(data_path, file_name, highlight_leaders=False):
+    """
+    Plot a time-space diagram of trajectory data as scatters by batches of data points
+
+    Parameters:
+    ----------
+    data_path : string
+        Path where trajectory data is located.
+    file_name : string
+        Trajectory data file name. Data is NGSIM-like
+    highlight_leaders : bool, optional
+        Mark leader trajectory as red.
+
+    Returns: None
+    """
     plt.rcParams.update({'font.size': 14})
     data_file = os.path.join(data_path, file_name)
     # Initialize variables to track the current vehicle's trajectory
@@ -58,7 +77,6 @@ def scatter_time_space(data_path, file_name, highlight_leaders=False):
     plt.ylabel("Position (m)")
     plt.title("Time-space diagram")
     
-
     # go through the file a second time to plot the trip segments that don't have a leader
     if highlight_leaders:
         print("plotting no-leaders part")
@@ -87,55 +105,73 @@ def scatter_time_space(data_path, file_name, highlight_leaders=False):
 
 
 def plot_time_space(data_path, file_name, highlight_leaders=False):
-    plt.rcParams.update({'font.size': 14})
+    """
+    Plot a time-space diagram trajectory by trajectory
+
+    Parameters:
+    ----------
+    data_path : string
+        Path where trajectory data is located.
+    file_name : string
+        Trajectory data file name. Data is NGSIM-like and must be ordered by trajectory ID.
+    highlight_leaders : bool, optional
+        Mark leader trajectory as red.
+
+    Returns: None
+    """
     
     data_file = os.path.join(data_path, file_name)
     # Initialize variables to track the current vehicle's trajectory
     current_vehicle_id = None
     current_trajectory = []
 
-    plt.figure(figsize=(16, 9))
+    # plt.figure(figsize=(16, 9))
+    fs = 20
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = fs
+    plt.figure(figsize=(7,5))
 
-    # Read the data file line by line
+    # Read the data file line by line  
     with open(data_file, "r") as file:
-        next(file)
+        next(file)  # Skip header
+        # reader = csv.reader(file)
+        # for columns in reader:
         for line in file:
-            
-            # Split the line into columns
             columns = line.strip().split()
-            # print(columns)
-            # Extract vehicle ID, Frame ID, and LocalY
+            # Extract vehicle ID, Frame ID, LocalY, and mean speed
             vehicle_id = columns[0]
-            time = float(columns[1]) * 0.1
+            time = float(columns[1])*0.1
             local_y = float(columns[3])
             mean_speed = float(columns[4])
 
-            # Check if we encountered data for a new vehicle
+            # Check if new vehicle is encountered
             if vehicle_id != current_vehicle_id:
-                # If so, plot the trajectory of the previous vehicle (if any)
+                # Plot the trajectory of the previous vehicle
                 if current_vehicle_id is not None:
                     times, positions, speeds = zip(*current_trajectory)
-                    plt.scatter(times, positions, c=speeds, s=0.1)
-                
-                # Start a new trajectory for the current vehicle
+                    scatter = plt.scatter(times, positions, c=speeds, s=0.1, cmap='viridis')
+
+                # Start new trajectory
                 current_vehicle_id = vehicle_id
                 current_trajectory = [(time, local_y, mean_speed)]
             else:
-                # Continue adding to the current vehicle's trajectory
+                # Continue with current trajectory
                 current_trajectory.append((time, local_y, mean_speed))
 
-            
-
-    # Plot the trajectory of the last encountered vehicle (if any)
+    # Plot the last vehicle's trajectory
     if current_vehicle_id is not None:
         times, positions, speeds = zip(*current_trajectory)
-        plt.scatter(times, positions, c=speeds, s=0.1)
-        
-    # Add labels and legend
-    # plt.colorbar(label='Mean Speed')
-    plt.xlabel("Time (sec)")
+        scatter = plt.scatter(times, positions, c=speeds, s=0.1, cmap='viridis')
+
+    # Add labels and colorbar
+    plt.xlabel("Time (s)")
     plt.ylabel("Position (m)")
-    plt.title("Time-space diagram")
+    # plt.title("Time-space diagram")
+
+    # Create colorbar
+    colorbar = plt.colorbar(scatter)
+    colorbar.set_label('Speed (m/s)')
+
 
     # go through the file a second time to plot the trip segments that don't have a leader
     if highlight_leaders:
@@ -157,14 +193,35 @@ def plot_time_space(data_path, file_name, highlight_leaders=False):
         plt.scatter(time_no_leader, space_no_leader, c="r", s=0.5)
 
     # Show the plot
+    plt.tight_layout()
     plt.show()
     return
 
 
 def plot_macro_sim_grid(macro_data, quantity, dx=10, dt=10, fig=None, axes=None, ax_idx=0, label=''):
-    '''
-    plot heatmap of Q, Rho and V in one plot
-    '''
+    """
+    Plot macroscopic flow (Q), density (Rho) or speed (V) in a 3x3 grid plot.
+    For comparison of calibration result in the on_ramp scenario
+
+    Parameters:
+    ----------
+    macro_data : dict
+        Path where macroscopic data is located.
+        macro_data = {
+            "speed": np.array(),
+            "flow": np.array(),
+            "density": np.array(),
+         }
+    quantity : string
+        Quantity to plot, "flow", "speed" or "density".
+    dx : float
+        Spatial discretization in meter.
+    dt : float
+        Temporal discretization in second.
+    fig, axes, ax_idx, label: allow iterative plotting
+
+    Returns: fig, axes
+    """
     fs = 18
     minutes = 10
     length = int(minutes * 60/dt)
@@ -228,9 +285,29 @@ def plot_macro_sim_grid(macro_data, quantity, dx=10, dt=10, fig=None, axes=None,
     return fig, axes
 
 def plot_macro_grid(macro_data, quantity, dx=160.934, dt=30, fig=None, axes=None, ax_idx=0, label=''):
-    '''
-    plot heatmap of Q, Rho and V in one plot
-    '''
+    """
+    Plot macroscopic flow (Q), density (Rho) or speed (V) in a 3x3 grid plot.
+    For comparison of calibration result in I-24 scenario
+
+    Parameters:
+    ----------
+    macro_data : dict
+        Path where macroscopic data is located.
+        macro_data = {
+            "speed": np.array(),
+            "flow": np.array(),
+            "density": np.array(),
+         }
+    quantity : string
+        Quantity to plot, "flow", "speed" or "density".
+    dx : float
+        Spatial discretization in meter.
+    dt : float
+        Temporal discretization in second.
+    fig, axes, ax_idx, label: allow iterative plotting
+
+    Returns: fig, axes
+    """
     fs = 18
     hours = 3
     length = int(hours * 3600/dt)
@@ -257,12 +334,10 @@ def plot_macro_grid(macro_data, quantity, dx=160.934, dt=30, fig=None, axes=None
     }
 
     data = macro_data[quantity][:length,:]
-    
     h = axes[ax_idx].imshow(data.T*scale_dict[quantity], aspect='auto',vmin=0, vmax=max_dict[quantity])# , vmax=np.max(Q.T*3600)) # 2000 convert veh/s to veh/hr/lane
     
     # axes[ax_idx].set_title(f"{quantity.capitalize()} ({unit_dict[quantity]})")
     axes[ax_idx].set_title("Exp "+label, fontsize=fs)
-
 
     def time_formatter(x, pos):
         # Calculate the time delta in minutes
@@ -276,9 +351,7 @@ def plot_macro_grid(macro_data, quantity, dx=160.934, dt=30, fig=None, axes=None
     xc = dt/60  # convert sec to min
     yc = dx
     ax = axes[ax_idx]
-
     ax.invert_yaxis()
-    
     
     if ax_idx >= 6:
         ax.set_xlabel("Time (hour of day)")
@@ -297,8 +370,9 @@ def plot_macro_grid(macro_data, quantity, dx=160.934, dt=30, fig=None, axes=None
     return fig, axes
 
 
-def plot_detector_data(xml_file, v=None, rho=None, q=None):
+def plot_detector_data(xml_file):
     '''
+    Adhoc function
     plot the flow/density/speed relationship from xml_file (.out.xml)
     v, rho, q are background equilibrium macro quantities, derived from IDM parameters
     '''
@@ -333,7 +407,20 @@ def plot_detector_data(xml_file, v=None, rho=None, q=None):
     plt.legend()
     plt.show()
 
+
 def visualize_fcd(fcd_file, lanes=None):
+    """
+    Plot a time-space diagram from SUMO output fcd data directly
+
+    Parameters:
+    ----------
+    fcd_file : string
+        Path where fcd data is located.
+    lanes : list or None, optional
+        Specify a list of lanes to plot. If lanes=None, plot all lanes
+
+    Returns: None
+    """
     # Parse the FCD XML file
     tree = ET.parse(fcd_file)
     root = tree.getroot()
@@ -358,10 +445,13 @@ def visualize_fcd(fcd_file, lanes=None):
         df = df[df['lane'].isin(lanes)]
     
     # Plot time-space diagrams
-    plt.figure(figsize=(15, 10))
+    fs = 20
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = fs
+    plt.figure(figsize=(7,5))
     
     if lanes is None:
-        plt.title('Time-Space Diagram for All Lanes')
+        # plt.title('Time-Space Diagram for All Lanes')
         plt.xlabel('Time (s)')
         plt.ylabel('Position (m)')
         scatter = plt.scatter(df['time'], df['x'], c=df['speed'], cmap='viridis', s=1)
@@ -384,7 +474,18 @@ def visualize_fcd(fcd_file, lanes=None):
     plt.show()
 
 
-def scatter_fcd(fcd_file, lanes=None):
+def scatter_fcd(fcd_file):
+    """
+    Plot a time-space diagram from SUMO output fcd data directly
+    scatter plot in batches -> works for small fcd_file only
+
+    Parameters:
+    ----------
+    fcd_file : string
+        Path where fcd data is located.
+
+    Returns: None
+    """
     # works on I-24 new only
     # Parse the FCD XML file
     tree = ET.parse(fcd_file)
@@ -437,7 +538,19 @@ def scatter_fcd(fcd_file, lanes=None):
     plt.show()
 
 
-def scatter_fcd_i24(fcd_file, lanes=None):
+def scatter_fcd_i24(fcd_file):
+    """
+    Plot a time-space diagram from SUMO output fcd data directly
+    Plot configured for I24 scenario specifically.
+    Slow on i24 data
+
+    Parameters:
+    ----------
+    fcd_file : string
+        Path where fcd data is located.
+
+    Returns: None
+    """
     # Parse the FCD XML file
     tree = ET.parse(fcd_file)
     root = tree.getroot()
@@ -495,6 +608,7 @@ def scatter_fcd_i24(fcd_file, lanes=None):
 
 def plot_rds_vs_sim(rds_dir, sumo_dir, measurement_locations, quantity="volume"):
     '''
+    TO BE REMOVED
     rds_dir: directory for filtered RDS data
     sumo_dir: directory for DETECTOR.out.xml files
     measurement_locations a list of detectors
@@ -553,9 +667,11 @@ def format_yticks(y, pos):
 
 def plot_sim_vs_sim(sumo_dir, measurement_locations, quantity="volume"):
     '''
+    TO BE REMOVED
     sumo_dir: directory for DETECTOR.out.xml files
     measurement_locations: a list of detectors
     quantity: "volume", "speed" or "occupancy"
+    plot ground truth detector data with another labeled by "trial_XXX"
     '''
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['font.size'] = 18
@@ -643,15 +759,26 @@ def plot_sim_vs_sim(sumo_dir, measurement_locations, quantity="volume"):
 
 
 def plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):
-    '''
-    sumo_dir: directory for DETECTOR.out.xml files
-    measurement_locations: a list of detectors
-    quantity: "volume", "speed" or "occupancy"
-    '''
+    """
+    Iteratively plot detector output from SUMO, layering multiple detector data
+    plot on_ramp scenario, not for I-24
+
+    Parameters:
+    ----------
+    sumo_dir: string
+        directory for DETECTOR.out.xml files
+    measurement_locations: list
+        a list of detectors
+    quantity: string
+        "volume", "speed" or "occupancy"
+    fig, axes, label: for iterative plotting
+
+    Returns: fig, axes
+    """
+
     fs = 20
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['font.size'] = fs
-
 
     # Read and extract data
     if label == "gt":
@@ -697,13 +824,100 @@ def plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", 
     # Adjust the layout to make room for the legends
     plt.tight_layout(rect=[0, 0, 1, 1])
 
-
     return fig, axes
 
 
 
-def plot_line_detectors(sumo_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):
+
+def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):
+    """
+    Iteratively plot detector output from SUMO, layering multiple detector data
+    For I-24 scenario
+
+    Parameters:
+    ----------
+    sumo_dir: string
+        directory for DETECTOR.out.xml files
+    rds_dir: string
+        directory for rds .csv files
+    measurement_locations: list
+        a list of detectors
+    quantity: string
+        "volume", "speed" or "occupancy"
+    fig, axes, label: for iterative plotting
+
+    Returns: fig, axes
+    """
+    HOURS = 5 # hours of RDS data to plot
+    fs = 20
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = fs
+    start_time = pd.Timestamp('05:00')  # 5:00 AM
+    time_interval = 300  # seconds
+
+
+    # Read and extract data
+    if label == "RDS":
+        sim_dict = reader.rds_to_matrix(rds_file=rds_dir, det_locations=measurement_locations)
+        start_idx = int(5*3600/time_interval)
+    else:
+        sim_dict = reader.extract_sim_meas(measurement_locations=measurement_locations, file_dir=sumo_dir) 
+        sim_dict["flow"] = sim_dict["volume"]
+        sim_dict["density"] = sim_dict["flow"]/sim_dict["speed"]
+        start_idx = 12 # skip the first hour of simulation (buffer)
+
+    unit_dict = {
+        "speed": "mph",
+        "volume": "vphpl",
+        "occupancy": "%"
+    }
+    
+    num_points = min(len(sim_dict[quantity][0, :]), int(HOURS*3600/time_interval))
+    time_index_rds = pd.date_range(start=start_time, periods=num_points, freq=f'{time_interval}s')
+    unit_dict = {
+        "speed": "mph",
+        "flow": "vphpl",
+        "density": "veh/mi/lane"
+    }
+    max_dict = {
+        "speed": 90,
+        "flow": 2400,
+        "density": 150
+    }
+
+    # Create a grid of subplots
+    if fig is None:
+        fig, axes = plt.subplots(nrows=5, ncols=4, figsize=(20, 18))
+
+    axes = axes.flatten()
+    # Determine the y-axis range across all plots
+    y_min = 0
+    y_max = max_dict[quantity] # max(sim1_dict[quantity].max(), sim2_dict[quantity].max()) #+ 200
+
+    for i, det in enumerate(measurement_locations):
+        ax = axes[i]
+        # ax.plot(sim_dict[quantity][i, :], linestyle='--', marker='o', label=label)
+        ax.plot(time_index_rds, sim_dict[quantity][i,start_idx:start_idx+num_points],  linestyle='--', marker='o', label=label)
+
+        parts = det.split('_')
+        ax.set_title( f"MM{parts[0]}.{parts[1]} lane {int(parts[2])+1}", fontsize=fs)
+        ax.set_ylim(y_min, y_max)
+        ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%H:%M'))
+        ax.xaxis.set_major_locator(plt.matplotlib.dates.HourLocator(interval=1))
+        if i%4 == 0:
+            ax.set_ylabel(f"{quantity.capitalize()} ({unit_dict[quantity]})")
+        if i>=16:
+            ax.set_xlabel("Time (hour of day)")
+
+    # Adjust the layout to make room for the legends
+    axes[3].legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    return fig, axes
+
+
+def plot_line_detectors_i24(sumo_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):
     '''
+    TO BE REMOVED   
     sumo_dir: directory for DETECTOR_EXP.csv files
     measurement_locations: a list of detectors
     quantity: "volume", "speed" or "occupancy"
@@ -796,6 +1010,17 @@ def plot_line_detectors(sumo_dir, measurement_locations, quantity="volume", fig=
     return fig, axes
 
 def read_asm(asm_file):
+    """
+    Plot macro quantities of RDS-ASM data in 1x3 grid (provided by Junyi Ji)
+    For I-24 scenario
+
+    Parameters:
+    ----------
+    asm_file: string
+        directory for asm-processed rds .csv file
+
+    Returns: None
+    """
 
     # Initialize an empty DataFrame to store the aggregated results
     aggregated_data = pd.DataFrame()
@@ -819,7 +1044,7 @@ def read_asm(asm_file):
     milemarker_max = 57.6
     start_time = aggregated_data['unix_time'].min()+3600 # data starts at 4AM CST
     
-    end_time = start_time + 3*3600 # only select the first 3 hours
+    end_time = start_time + 5*3600 # only select the first 4 hours
 
     # Filter milemarker within the specified range
     filtered_data = aggregated_data[
@@ -886,7 +1111,220 @@ def read_asm(asm_file):
     plt.show()
     return
 
+def vis_rds_lines(rds_file, milemarkers, quantity):
+    '''
+    an adhoc function to visualize flow at detector locations
+    milemarkers: a list of floats, e.g., [55.3, 56.3]
+    quantity: "speed", "volume" or "occupancy"
+    plot sum of volume for all links in each milemarker
+    '''
+    df = pd.read_csv(rds_file)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S')
+
+    filtered_df = df[df['milemarker'].isin(milemarkers)] # include mainline and ramp flows
+    print(filtered_df.head())
+    aggregated = filtered_df.groupby(
+        ['link_name', 'milemarker', pd.Grouper(key='timestamp', freq='5min')]
+    ).agg({
+        'speed': 'mean',     # Average speed
+        'volume': 'sum',     # Sum of volume
+        'occupancy': 'mean'  # Average occupancy
+    }).reset_index()
+
+    groups = aggregated.groupby('link_name') # "link_name"
+    # estimate ramp flow at MM55.6
+    # q_553 = aggregated[aggregated["link_name"] == ' R3G-00I24-55.3W (259)']
+    # q_560 =  aggregated[aggregated["link_name"] == ' R3G-00I24-56.0W (262)']
+    # q_560off = aggregated[aggregated["link_name"] == ' R3G-00I24-56.0W Off Ramp (262)']
+    # # vehicle conservation
+    # # N_560-N560off+N556-N556 = 0, and N556\approx N553
+    # N_553 = q_553["volume"].cumsum().values
+    # N_560 = q_560["volume"].cumsum().values
+    # N_560off = q_560off["volume"].cumsum().values
+    # N_556on_est = N_553 + N_560off - N_560
+    # # print(N_556on_est)
+
+    # to_plot = [q_560["volume"], q_553["volume"]]
+    # labels =  ["56.0", "55.3 mainline"]
+    # timestamps = q_553["timestamp"]
+    # for i, item in enumerate(to_plot):
+    #     plt.plot(timestamps, item, marker='o', label=labels[i])
+
+
+
+    plt.figure(figsize=(10, 6))
+    # Plot time vs. speed for each group in the aggregated result
+    for name, group in groups:
+        # Plot time (timestamp) vs speed for the current group
+        # link_names = aggregated[aggregated['milemarker'] == name]['link_name'].unique()
+        # filtered_group = group[group['link_name'].isin(link_names)]
+        # volume_sum = filtered_group.groupby('timestamp')['volume'].sum().reset_index()
+
+        volume_sum = group
+        plt.plot(volume_sum['timestamp'], volume_sum[quantity], marker='o', label=f'{name}')
+        
+    # Set plot title and labels
+    # plt.title(f'Speed vs Time for {link_name}')
+    plt.xlabel('Time')
+    plt.ylabel(quantity)
+    
+    # Rotate x-axis labels for better readability
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    plt.xticks(rotation=45)
+        
+    # Show legend
+    plt.legend()
+        
+    # Display the plot
+    plt.tight_layout()
+    plt.show()
+
+def od_estimation(rds_file, plot=False, write_rou_xml=False):
+    '''
+    An ad-hoc function to estimate routes for SUMO.rou.xml file in I-24 scenario
+    OD flow variables
+        <route id="r_0" edges="E0 E1 E3 E5 E7 E8" /> mainline f15
+        <route id="r_1" edges="E0 E1 E3 E4" />  f13
+        <route id="r_2" edges="E2 E1 E3 E4" />  f23
+        <route id="r_3" edges="E2 E1 E3 E5 E7 E8" />  f25
+        <route id="r_4" edges="E6 E7 E8" /> f45
+    RDS data
+        y1: MM56.0 off-ramp
+        y2: MM56.0 mainline
+        y3: MM55.3 mainline
+        y4: MM56.7 mainline
+        y5: MM56.7 on-ramp
+    system of equations (see map)
+        f13 + f23 = y1
+        f45 = y3 - y2
+        f15 + f25 + f45 = y3
+        f15 + f13 + f25 + f23 = y1+y2
+        f15 + f13 = y4
+        f25 + f23 = y5
+    This ssytem of equations have infinite solution - assume TR estimated at Harding off-ramp
+    '''
+    START_RDS_HR = 4
+    END_RDS_HR = 10
+    FREQ = "30min" # FREQ X SCALE should be 1hr
+    SCALE = 2
+    source_file = r"C:\Users\yanbing.wang\Documents\CorridorCalibration\sumo\I24scenario\I24_scenario_old.rou.xml"
+    destination_file = r"C:\Users\yanbing.wang\Documents\CorridorCalibration\sumo\I24scenario\I24_scenario.rou.xml"
+    
+    # get RDS data
+    df = pd.read_csv(rds_file)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%H:%M:%S')
+
+    filtered_df = df[df['milemarker'].isin([57.3, 56.7, 56.3, 56.0, 55.3])] # include mainline and ramp flows
+    scale = 2 # convert to vehperhr
+    aggregated = filtered_df.groupby(
+            ['link_name', pd.Grouper(key='timestamp', freq=FREQ)]
+        ).agg({
+            'speed': 'mean',     # Average speed
+            'volume': 'sum',     # Sum of volume
+            'occupancy': 'mean'  # Average occupancy
+        }).reset_index()
+    timestamps = aggregated[aggregated["link_name"] == ' R3G-00I24-56.0W (262)']["timestamp"]
+    y1 = aggregated[aggregated["link_name"] == ' R3G-00I24-56.0W Off Ramp (262)']["volume"].values * SCALE # convert to vph
+    y2 = aggregated[aggregated["link_name"] == ' R3G-00I24-56.0W (262)']["volume"].values * SCALE
+    y3 = aggregated[aggregated["link_name"] == ' R3G-00I24-55.3W (259)']["volume"].values * SCALE
+    y4 = aggregated[aggregated["link_name"] == ' R3G-00I24-56.7W (267)']["volume"].values * SCALE
+    y5 = aggregated[aggregated["link_name"] == ' R3G-00I24-56.7W On Ramp (267)']["volume"].values * SCALE
+    # print(timestamps)
+
+    # solution - underdetermined (f13 and f23 are co-dependent)
+    # with turning ratio assumption
+    TR = y1/(y1+y2)
+    # TR = 0.1038
+    f13 = TR * y4
+    f15 = (1-TR) * y4
+    f45 = y3 - y2
+    f25 = y3 - f15 - f45
+    f23 = y1 - f13
+    
+    if plot:
+        to_plot = [f13, f15, f25, f23, f45]
+        labels =  ["f13", "f15", "f25", "f23", "f45"]
+        
+        for i, item in enumerate(to_plot):
+            plt.plot(timestamps, item, marker='o', label=labels[i])
+        
+        plt.xlabel('Time')
+        plt.ylabel("Volume (veh/hr)")
+        
+        # Rotate x-axis labels for better readability
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        plt.xticks(rotation=45)    
+
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+    if write_rou_xml is not False:
+        # create a copy of "I24_scenario.rou.xml" in /I24scenario
+        shutil.copy(source_file, destination_file)
+
+        # delete all flow
+        rou_tree = ET.parse(destination_file)
+        rou_root = rou_tree.getroot()
+        for flow in rou_root.findall(".//flow"):
+            rou_root.remove(flow)
+        rou_tree.write(destination_file)
+
+        # modify flow according to f13 etc.
+        # time indices - flows are from 0:00AM to 24:00, select 5-9AM
+        start = int(START_RDS_HR * scale)
+        end = int(END_RDS_HR * scale)
+        idx = 0
+        flows = [f15, f13, f23, f25, f45]
+        routes = ["r_0", "r_1", "r_2", "r_3", "r_4"]
+        flow_list = []
+        for i in np.arange(start, end):
+            for f, r in zip(flows, routes):
+                flow_elem = {
+                    "id": f"f_{idx}",
+                    "type": "trial",
+                    "begin": f"{(i-start) * 1800}",
+                    "departLane": "best",
+                    "route": r,
+                    "end": f"{(i-start+1) * 1800}",
+                    "vehsPerHour": f"{f[i]}",
+                    "departSpeed": "desired"
+                }
+                idx += 1
+                flow_list.append(flow_elem)
+
+       
+        for flow in flow_list:
+            # Create a flow element
+            flow_elem = ET.SubElement(rou_root, "flow", {
+                "id": flow["id"],
+                "type": flow["type"],
+                "begin": flow["begin"],
+                "departLane": flow["departLane"],
+                "route": flow["route"],
+                "end": flow["end"],
+                "vehsPerHour": flow["vehsPerHour"],
+                "departSpeed": flow["departSpeed"]
+            })
+        # Convert the tree to a string
+        xml_str = ET.tostring(rou_root, encoding='utf-8', method='xml').decode('utf-8')
+        # Format the XML string with indentation
+        formatted_xml_str = minidom.parseString(xml_str).toprettyxml(indent="  ")
+        
+        # Write to file
+        with open(destination_file, "w") as f:
+            f.write(formatted_xml_str)
+
+    return
+         
+
 
 if __name__ == "__main__":
-    print("not implemented")
+    # print("not implemented")
+    # plot_time_space(r"C:\Users\yanbing.wang\Documents\CorridorCalibration\sumo\on_ramp", "trajs_gt_byid.csv", highlight_leaders=False)
+    # visualize_fcd(r"C:\Users\yanbing.wang\Documents\CorridorCalibration\sumo\on_ramp\trajs_gt.xml")
+    # plot_time_space(r"C:\Users\yanbing.wang\Documents\CFCalibration\data", "DATA (NO MOTORCYCLES).txt", highlight_leaders=False)
 
+    rds_file = r'data/RDS/I24_WB_52_60_11132023.csv'
+    vis_rds_lines(rds_file=rds_file, milemarkers=[57.3, 56.7, 6.3], quantity="volume") # [57.3, 56.7, 56.3, 56.0]
+    # od_estimation(rds_file, plot=True, write_rou_xml=True)

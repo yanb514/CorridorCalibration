@@ -2,12 +2,15 @@ import gzip
 import csv
 import re
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.dates import DateFormatter
+# import matplotlib.pyplot as plt
+# from matplotlib.dates import DateFormatter
 import numpy as np
 import os
 import xml.etree.ElementTree as ET
 from scipy.interpolate import interp1d
+# from multiprocessing import Pool, cpu_count
+# from collections import defaultdict
+from collections import OrderedDict
 
 def extract_mile_marker(link_name):
     "link_name: R3G-00I24-59.7W Off Ramp (280)"
@@ -33,11 +36,25 @@ def safe_float(value):
         return None
 
 def read_and_filter_file(file_path, write_file_path, startmile, endmile):
-    '''
-    read original dat.gz file and select I-24 MOTION WB portion
-    write rows into a new file
+    """
+    Read original dat.gz file and select I-24 MOTION WB portion between startmile and endmile
+    write rows into a new csv file in the following format
     | timestamp | milemarker | lane | speed | volume | occupancy |
-    '''
+
+    Parameters:
+    ----------
+    file_path : string
+        path of the original RDS data in dat.gz
+    write_file_path : string
+        path of the new csv file to store filtered data
+    startmile : float
+        starting milemarker to filter e.g., 54.1
+    endmile : float
+        ending milemarker to filter e.g., 57.6
+
+    Returns: None
+    """
+
     selected_fieldnames = ['timestamp', 'link_name', 'milemarker', 'lane', 'speed', 'volume', 'occupancy']
     open_func = gzip.open if file_path.endswith('.gz') else open
     with open_func(file_path, mode='rt') as file:
@@ -57,6 +74,7 @@ def read_and_filter_file(file_path, write_file_path, startmile, endmile):
                         'occupancy': safe_float(row[' occupancy'])
                     }
                     writer.writerow(selected_row)
+
 
 def interpolate_zeros(arr):
     arr = np.array(arr)
@@ -81,6 +99,7 @@ def interpolate_zeros(arr):
 
 def rds_to_matrix(rds_file, det_locations ):
     '''
+    rds_file is the processed RDS data, aggregated in 5min
     Read RDS data from a CSV file and output a matrix of [N_dec, N_time] size,
     where N_dec is the number of detectors and N_time is the number of aggregated
     time intervals of 5 minutes.
@@ -176,42 +195,121 @@ def extract_sim_meas(measurement_locations, file_dir = ""):
         detector_data[key] = np.array(val)
         # print(val.shape)
     
+    detector_data["flow"]=detector_data["volume"]
+    detector_data["density"]=detector_data["flow"]/detector_data["speed"]
     return detector_data
 
-
-
-def parse_xml(xml_file):
+def extract_mean_speed_all_lanes(xml_file):
+    '''
+    given output of lanearea(E2) detectors, extract meanSpeed for all lanes
+    lane_speeds[lane_id] = [speeds at each time interval]
+    '''
+    # Parse the XML file
     tree = ET.parse(xml_file)
     root = tree.getroot()
-    
-    data = []
-    for timestep in root.findall('timestep'):
-        for vehicle in timestep.findall('vehicle'):
-            vehicle_id = vehicle.get('id')
-            time = timestep.get('time')
-            lane_id = vehicle.get('lane')
-            local_y = vehicle.get('x', '-1')
-            mean_speed = vehicle.get('speed', '-1')
-            mean_accel = vehicle.get('accel', '-1')  # Assuming accel is mean acceleration
-            veh_length = vehicle.get('length', '-1')
-            veh_class = vehicle.get('type', '-1')
-            follower_id = vehicle.get('pos', '-1')  # Assuming pos is follower ID
-            leader_id = vehicle.get('slope', '-1')  # Assuming slope is leader ID
-            
-            row = [vehicle_id, time, lane_id, local_y, mean_speed, mean_accel, veh_length, veh_class, follower_id, leader_id]
-            # data.append([str(item) for item in row])
-            data.append([" ".join(str(num) for num in row)])
-    
-    return data
 
-# Function to write data to CSV
-def write_csv(data, csv_file):
-    with open(csv_file, 'w', newline='') as file:
+    # Dictionary to store mean speeds for each lane
+    lane_speeds = {}
+    time_intervals = []
+    prev_time = -1
+
+    # Iterate over all intervals in the XML file
+    for interval in root.findall('interval'):
+        lane_id = interval.get('id')
+        mean_speed = float(interval.get('meanSpeed'))
+        begin_time = float(interval.get("begin"))
+        if begin_time != prev_time:
+            time_intervals.append(begin_time)
+            prev_time = begin_time
+
+        # If lane_id is not already in the dictionary, initialize a new list
+        if lane_id not in lane_speeds:
+            lane_speeds[lane_id] = []
+
+        # Append the meanSpeed to the corresponding lane's list
+        lane_speeds[lane_id].append(mean_speed)
+
+    # Calculate travel time
+    travel_time_all_lane = {}
+    for lane_id, speeds in lane_speeds.items():
+        speeds = np.array(speeds)
+        speeds = np.where(speeds == 0, 0.1, speeds) # avoide divide by zero
+        tt = 1300/speeds
+        travel_time_all_lane[lane_id] = tt
+
+
+    return lane_speeds, travel_time_all_lane, time_intervals
+
+
+
+
+
+def parse_and_reorder_xml(xml_file, output_csv, link_names=None):
+    '''
+    Parse xml file (ordered by timestep) to a csv file (ordered by vehicleID, in NGSIM format)
+    link_names: selected links that the data will be written (usually to filter mainline only)
+    if link_names is set to None, then no data will be filtered (select all links)
+    '''
+    # OrderedDict to store data by vehicle id, preserving the order of first appearance
+    vehicle_data = OrderedDict()
+    
+    # Stream the XML file with iterparse
+    context = ET.iterparse(xml_file, events=('end',))
+    
+    # Parse each timestep and collect vehicle data
+    print("parsing xml file...")
+    for event, elem in context:
+        if elem.tag == 'timestep':
+            time = elem.get('time', '-1')  # Get the time for this timestep
+            
+            for vehicle in elem.findall('vehicle'):
+                vehicle_id = vehicle.get('id', '-1')
+                lane_id = vehicle.get('lane', '-1')
+                local_y = vehicle.get('x', '-1')
+                mean_speed = vehicle.get('speed', '-1')
+                mean_accel = vehicle.get('accel', '-1')  # Assuming 'accel' exists
+                veh_length = vehicle.get('length', '-1')
+                veh_class = vehicle.get('type', '-1')
+                follower_id = vehicle.get('pos', '-1')  # Assuming 'pos' is follower ID
+                leader_id = vehicle.get('slope', '-1')  # Assuming 'slope' is leader ID
+                
+                # Ensure vehicle_id is added the first time it appears
+                if vehicle_id not in vehicle_data:
+                    vehicle_data[vehicle_id] = []
+                
+                # Append the row for this vehicle at this timestep
+                vehicle_data[vehicle_id].append([
+                    vehicle_id, time, lane_id, local_y, mean_speed, mean_accel, 
+                    veh_length, veh_class, follower_id, leader_id
+                ])
+            elem.clear()  # Free memory
+
+    # Reorder data by vehicle_id first appearance, then by time
+    print("reorder by time...")
+    for vehicle_id in vehicle_data:
+        vehicle_data[vehicle_id].sort(key=lambda x: float(x[1]))
+
+    # Write the result to a CSV file
+    print("writing to csv...")
+    with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
-        # Write header
-        writer.writerow(['VehicleID', 'Time', 'LaneID', 'LocalY', 'MeanSpeed', 'MeanAccel', 'VehLength', 'VehClass', 'FollowerID', 'LeaderID'])
-        # Write rows
-        writer.writerows(data)
+        # Write the header
+        writer.writerow(['VehicleID', 'Time', 'LaneID', 'LocalY', 'MeanSpeed', 'MeanAccel', 
+                         'VehLength', 'VehClass', 'FollowerID', 'LeaderID'])
+        
+        # Write the sorted data
+        if link_names is None: # write all data
+            for vehicle_id in vehicle_data:
+                for row in vehicle_data[vehicle_id]:
+                    writer.writerow(row)
+        else: # Write selected links data
+            for vehicle_id in vehicle_data:
+                for row in vehicle_data[vehicle_id]:
+                    if row[2] in link_names:
+                        writer.writerow(row)
+
+    return
+
 
 
 def det_to_csv(xml_file, suffix=""):
@@ -250,21 +348,42 @@ def det_to_csv(xml_file, suffix=""):
 
     return
 
-def fcd_to_csv_byid(xml_file, csv_file):
-    print(f"parsing {xml_file}...")
-    data = parse_xml(xml_file)
-    print(f"writing {csv_file}...")
-    write_csv(data, csv_file)
+
+def filter_trajectory_data(input_file, output_file, start_time, end_time):
+    # filter fcd.xml output with specified start_time and end_time
+    # Open output file and write the XML header and root opening tag
+    time_offset = start_time
+    with open(output_file, 'w') as out:
+        out.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        out.write('<fcd-export xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ')
+        out.write('xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/fcd_file.xsd">\n')
+
+        # Parse the input file iteratively
+        for event, elem in ET.iterparse(input_file, events=("start", "end")):
+            if event == "end" and elem.tag == "timestep":
+                time = float(elem.attrib["time"])
+                
+                # Check if the timestep falls within the given range
+                if start_time <= time <= end_time:
+                    # Adjust the time to start from 0
+                    elem.attrib["time"] = f"{time - time_offset:.2f}"
+                    # Write the timestep element to the output file
+                    out.write(ET.tostring(elem, encoding="unicode"))
+                
+                # Clear the element from memory to save space
+                elem.clear()
+
+        # Close the root tag
+        out.write('</fcd-export>\n')
+
     return
-
-
 
 if __name__ == "__main__":
 
     file_path = r'PATH TO RDS.dat.gz'
     write_file_path = r'data/RDS/I24_WB_52_60_11132023.csv'
     # read_and_filter_file(file_path, write_file_path, 52, 57.5)
-    # vis_rds_lines(write_file_path=write_file_path)
+    # 
     # vis_rds_color(write_file_path=write_file_path, lane_number=None)
     # plot_ramp_volumes(write_file_path)
 

@@ -270,9 +270,14 @@ def objective(trial):
     simulated_output = reader.extract_sim_meas(["trial_"+ location for location in measurement_locations],
                                         file_dir = temp_path)
     
-    # Calculate the objective function value
-    error = np.linalg.norm(simulated_output[MEAS] - measured_output[MEAS])
-    
+    # RMSE
+    # diff = simulated_output[MEAS] - measured_output[MEAS] # measured output may have nans
+    # error = np.sqrt(np.nanmean(diff.flatten()**2))
+    # RMSPE
+    relative_diff = (simulated_output[MEAS] - np.nan_to_num(measured_output[MEAS], nan=0)) \
+                 / np.nan_to_num(measured_output[MEAS], nan=1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
+    error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
+
     clear_directory(os.path.join("temp", str(trial.number)))
     logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
     
@@ -332,33 +337,7 @@ if __name__ == "__main__":
     # Get the best parameters and save the optimization result
     best_params = study.best_params
     print('Best parameters:', best_params)
-    with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
-        pickle.dump(study, f)
-        print(f"Save optimization result as study_{EXP}.pkl in /calibration_result")
+    # with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
+    #     pickle.dump(study, f)
+    #     print(f"Save optimization result as study_{EXP}.pkl in /calibration_result")
 
-    # # ================================ visualize time-space using best parameters
-    # update_sumo_configuration(best_params)
-    # run_sumo(sim_config=SCENARIO+".sumocfg")#, fcd_output ="trajs_best.xml")
-    # vis.visualize_fcd("trajs_best.xml") # lanes=["E0_0", "E0_1", "E1_0", "E1_1", "E2_0", "E2_1", "E2_2", "E4_0", "E4_1"]
-    # sim_output = reader.extract_sim_meas(measurement_locations=["trial_"+ location for location in measurement_locations])
-    
-     
-    # ================================= compare GT meas. vs. simulation with custom params.======================
-    # best_params =  {'maxSpeed': 31.44813279984895, 'minGap': 1.8669305739182382, 'accel': 2.2398476082518677, 'decel': 2.5073714738472153, 'tau': 1.3988475504128757, 'lcStrategic': 0.8624217521963465, 'lcCooperative': 0.9789774143646455, 'lcAssertive': 0.43478229746049984, 'lcSpeedGain': 1.1383219615950644, 'lcKeepRight': 4.030227753894549, 'lcOvertakeRight': 0.9240310635518598}
-    # update_sumo_configuration(best_params)
-    # run_sumo(sim_config = SCENARIO+".sumocfg")
-    # vis.plot_sim_vs_sim(sumo_dir, measurement_locations, quantity="speed")
-    
-    # ============== compute & save macroscopic properties ==================
-    # best_params = {'maxSpeed': 30.53284221198521, 'minGap': 2.7958695360441843, 'accel': 2.4497572915690244, 'decel': 2.4293815796265275, 'tau': 1.374376527326827, 'lcStrategic': 1.3368371035725628, 'lcCooperative': 0.9994681517674497, 'lcAssertive': 0.35088886304156547, 'lcSpeedGain': 1.901166989734572, 'lcKeepRight': 0.7531568339763854},
-
-    # update_sumo_configuration(best_params)
-    # base_name = SCENARIO+""
-    # fcd_name = "fcd_"+base_name+"_"+EXP
-    # run_sumo(sim_config = base_name+".sumocfg", fcd_output =fcd_name+".out.xml")
-    # reader.fcd_to_csv_byid(xml_file=fcd_name+".out.xml", csv_file=fcd_name+".csv")
-    # macro.reorder_by_id(fcd_name+".csv", bylane=False)
-    # fcd_name = "fcd_onramp_cflc_v"
-    # macro_data = macro.compute_macro(fcd_name+"_byid.csv",  dx=10, dt=10, start_time=0, end_time=480, start_pos =0, end_pos=1300, save=True, plot=True)
-
-    # vis.scatter_fcd(fcd_name+".out.xml")

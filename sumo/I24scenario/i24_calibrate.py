@@ -1,4 +1,11 @@
-import traci
+'''
+Use optuna for optimization
+Faster than Differential Evolution
+Optuna allows
+- initial guess
+- parallel workers
+- log progress
+'''
 import optuna
 import subprocess
 import os
@@ -15,37 +22,34 @@ import json
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')) # two levels up
 sys.path.insert(0, main_path)
 import utils_data_read as reader
-import utils_vis as vis
-import macro
 
-# ================ I24 scenario ====================
-SCENARIO = "I24_scenario"
-EXP = "3c"
-N_TRIALS = 15000 # optimization trials
-N_JOBS = 32 # cores
-
+# ================ CONFIGURATION ====================
 with open('../config.json', 'r') as config_file:
     config = json.load(config_file)
 
 computer_name = os.environ.get('COMPUTERNAME', 'Unknown')
-if "CSI" in computer_name:
-    SUMO_EXE = config['SUMO_EXE']
-    
-    
-elif "VMS" in computer_name:
+if "VMS" in computer_name:
     SUMO_EXE = config['SUMO_EXE_PATH']
+else:
+    SUMO_EXE = config['SUMO_EXE']
 
-RDS_DIR = os.path.join("../..", "data/RDS/I24_WB_52_60_11132023.csv")
+SCENARIO = config["SCENARIO"]
+EXP = config["EXP"] # experiment label
+N_TRIALS = config["N_TRIALS"] # optimization trials
+N_JOBS = config["N_JOBS"] # cores
+RDS_DIR = config["RDS_DIR"]
+# RDS_DIR = os.path.join("../..", "data/RDS/I24_WB_52_60_11132023.csv")
+# ================================================
 
-
-
+# follows convention e.g., 56_7_0, milemarker 56.7, lane 1
 measurement_locations = [
-                        # '56_7_0', '56_7_1', '56_7_2', '56_7_3', '56_7_4', 
+                         '56_7_0', '56_7_1', '56_7_2', '56_7_3', '56_7_4', 
                          '56_3_0', '56_3_1', '56_3_2', '56_3_3', '56_3_4',
                          '56_0_0', '56_0_1', '56_0_2', '56_0_3', '56_0_4',
                          '55_3_0', '55_3_1', '55_3_2', '55_3_3',
                          '54_6_0', '54_6_1', '54_6_2', '54_6_3',
-                         '54_1_0', '54_1_1', '54_1_2', '54_1_3' ]
+                        #  '54_1_0', '54_1_1', '54_1_2', '54_1_3'
+                        ]
 
 initial_guesses = {'maxSpeed': 31.534820558874827, 'minGap': 1.860096631767026, 'accel': 1.0708978903827724, 'decel': 3.8918676775882215, 'tau': 1.7949543267839752, 'lcStrategic': 1.414,
                     'lcCooperative': 1.0,
@@ -93,7 +97,7 @@ def run_sumo(sim_config, tripinfo_output=None, fcd_output=None):
     """Run a SUMO simulation with the given configuration."""
     # command = ['sumo', '-c', sim_config, '--tripinfo-output', tripinfo_output, '--fcd-output', fcd_output]
 
-    command = [SUMO_EXE, '-c', sim_config]
+    command = [SUMO_EXE, '-c', sim_config] # stop after 5hr of simulation
     if tripinfo_output is not None:
         command.extend(['--tripinfo-output', tripinfo_output])
         
@@ -212,17 +216,21 @@ def objective(trial):
     simulated_output = reader.extract_sim_meas(measurement_locations=measurement_locations, file_dir=temp_path)
     
     # Align time
-    # TODO: SIMULATED_OUTPUT starts at 5AM-8AM, while measured_output is 0-24, both in 5min intervals
-    start_idx = 60 #int(5*60/5)
-    end_idx = min(simulated_output[MEAS].shape[1], 36)
-    end_idx_rds = start_idx + end_idx # at most three hours of simulated measurements
+    # TODO: SIMULATED_OUTPUT 5AM-10AM, while measured_output is 0-24, both in 5min intervals
+    start_idx_rds = 60 #int(5*60/5)
+    start_idx_sumo = 12 # sumo starts at 4AM to allow some buffer
+    length = 5*12-1 #5hr
+    # end_idx = min(simulated_output[MEAS].shape[1], 5*12)-1 # the last time interval of the simulated measurements are usually inaccurate (boundary issue)
+    # end_idx_rds = start_idx + end_idx # at most three hours of simulated measurements
     
-    # Calculate the objective function value
-    diff = simulated_output[MEAS][:,:end_idx] - measured_output[MEAS][:, start_idx: end_idx_rds] # measured output may have nans
-    # mask = ~np.isnan(diff)
-    # matrix_no_nan = np.where(mask, diff, 0)
-    # error = np.linalg.norm(matrix_no_nan)
+    # --- RMSE ---
+    diff = simulated_output[MEAS][:,start_idx_sumo:start_idx_sumo+length] - measured_output[MEAS][:, start_idx_rds: start_idx_rds+length] # measured output may have nans
     error = np.sqrt(np.nanmean(diff.flatten()**2))
+    # --- RMSPE ---
+    # relative_diff = (simulated_output[MEAS][:, :end_idx] - np.nan_to_num(measured_output[MEAS][:, start_idx:end_idx_rds], nan=0)) \
+    #              / np.nan_to_num(measured_output[MEAS][:, start_idx:end_idx_rds], nan=0.1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
+    # error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
+
     clear_directory(os.path.join("temp", str(trial.number)))
     # logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
     
@@ -263,7 +271,6 @@ if __name__ == "__main__":
 
     # ================================= run default 
     update_sumo_configuration(initial_guess)
-    # run_sumo(sim_config=SCENARIO+".sumocfg")
 
     # ================================= Create a study object and optimize the objective function
     clear_directory("temp")
@@ -289,28 +296,3 @@ if __name__ == "__main__":
     print('Best parameters:', best_params)
     with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
         pickle.dump(study, f)
-
-    # # ================================ visualize time-space using best parameters
-    # best_params = {'maxSpeed': 31.534820558874827, 'minGap': 1.860096631767026, 'accel': 1.0708978903827724, 'decel': 3.8918676775882215, 'tau': 1.7949543267839752}
-    # update_sumo_configuration(best_params)
-    # run_sumo(sim_config=SCENARIO+".sumocfg", fcd_output ="trajs_best.xml")
-    # vis.visualize_fcd("trajs_best.xml") # lanes=["E0_0", "E0_1", "E1_0", "E1_1", "E2_0", "E2_1", "E2_2", "E4_0", "E4_1"]
-
-    # # ============== compute & save macroscopic properties ==================
-    # update_sumo_configuration(best_params)
-    # base_name = SCENARIO+""
-    # fcd_name = "fcd_"+base_name+"_"+EXP
-    # run_sumo(sim_config = base_name+".sumocfg")#, fcd_output =fcd_name+".out.xml")
-    # reader.fcd_to_csv_byid(xml_file=fcd_name+".out.xml", csv_file=fcd_name+".csv")
-    # macro.reorder_by_id(fcd_name+".csv", bylane="mainline")
-    # macro_data = macro.compute_macro(fcd_name+"_mainline.csv", dx=160.934, dt=30, save=True, plot=True)
-
-    # with open(f'macro_fcd_I24_scenario_{EXP}_byid.pkl', 'rb') as file:
-    #     macro_data = pickle.load(file)
-    # macro.plot_macro(macro_data, dx=160.934, dt=30)
-
-
-    # vis.plot_rds_vs_sim(RDS_DIR, SUMO_DIR, measurement_locations, quantity="volume")
-    # asm_file =  os.path.join("../..", "data/2023-11-13-ASM.csv")
-    # vis.read_asm(asm_file)
-    # vis.scatter_fcd_i24(fcd_name+".out.xml")

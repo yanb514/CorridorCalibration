@@ -1,7 +1,8 @@
 data/*
 figures/*
-calibration_result/*
-simulation_result/*
+unused/*
+**/calibration_result
+**/simulation_result
 *.ipynb
 *.csv
 *.out.xml
