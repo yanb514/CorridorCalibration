@@ -20,8 +20,8 @@ import utils_vis as vis
 import utils_data_read as reader
 import utils_macro as macro
 import i24_calibrate as i24
-
-
+import warnings
+warnings.filterwarnings("ignore")
 
 SCENARIO = "I24_scenario"
 with open('../config.json', 'r') as config_file:
@@ -31,14 +31,16 @@ computer_name = os.environ.get('COMPUTERNAME', 'Unknown')
 if "CSI" in computer_name:
     SUMO_EXE = config['SUMO_EXE']
     
-    
 elif "VMS" in computer_name:
     SUMO_EXE = config['SUMO_EXE_PATH']
 
 RDS_DIR = os.path.join("../..", "data/RDS/I24_WB_52_60_11132023.csv")
 SUMO_DIR = os.path.dirname(os.path.abspath(__file__)) # current script directory
-asm_file =  os.path.join("../..", "data/2023-11-13-ASM.csv")
+ASM_FILE =  os.path.join("../..", "data/2023-11-13-ASM.csv")
+DX = 160.934 # meter, = 0.1 mile
+DT = 30 # sec
 
+# Consider mainline only for results
 measurement_locations = [
                          '56_7_0', '56_7_1', '56_7_2', '56_7_3', #'56_7_4', 
                          '56_3_0', '56_3_1', '56_3_2', '56_3_3', #'56_3_4',
@@ -50,21 +52,16 @@ measurement_locations = [
 
 best_param_map = {
     'default': {'maxSpeed': 34.91628705652602,'minGap': 2.9288888706657783,'accel': 1.0031145478483796, 'decel': 2.9618821510422406,'tau': 1.3051261247487569,'lcStrategic': 1.414, 'lcCooperative': 1.0,'lcAssertive': 1.0,'lcSpeedGain': 3.76,'lcKeepRight': 0.0,'lcOvertakeRight': 0.877},
-    "1a": {'maxSpeed': 40.73100503684973, 'minGap': 0.7554695612797295, 'accel': 1.5138893454833222, 'decel': 3.1736271864613324, 'tau': 1.758647213750675},
-    "1b": {'maxSpeed': 25.285732074182814, 'minGap': 1.0030275914354692, 'accel': 1.0523656379385362, 'decel': 3.9018744110714643, 'tau': 2.93682397740524},
-    "1c": {'maxSpeed': 42.367511096833326, 'minGap': 2.9993342836983476, 'accel': 1.9468168020463612, 'decel': 1.0061776541678609, 'tau': 2.9998938201490217},
-    "2a": {'lcStrategic': 4.13327296799944, 'lcCooperative': 0.18415903165741201, 'lcAssertive': 2.8928435373483725, 'lcSpeedGain': 2.234576625106279},
-    "2b": {'lcStrategic': 2.188441136054435, 'lcCooperative': 0.08301719911828441, 'lcAssertive': 4.5274083995909224, 'lcSpeedGain': 4.8748255095752695},
-    "2c": {'lcStrategic': 3.6399880110545846, 'lcCooperative': 0.7193235256529892, 'lcAssertive': 0.000705838535847945, 'lcSpeedGain': 1.1101360440720436},
-    "3a": {'maxSpeed': 41.050542277462505, 'minGap': 1.0778474458689624, 'accel': 2.9361340135234197, 'decel': 1.7060856568918261, 'tau': 1.801505055872516, 'lcStrategic': 1.5691496860555882, 'lcCooperative': 0.009112636537354599, 'lcAssertive': 4.547730711265782, 'lcSpeedGain': 1.3161135569989806},
-    # "3b": {'maxSpeed': 30.394124775941144, 'minGap': 1.1135192000015561, 'accel': 1.0488617301700136, 'decel': 3.894432099649597, 'tau': 2.5172146404021585, 'lcStrategic': 4.765478517631743, 'lcCooperative': 0.6036708111679133, 'lcAssertive': 4.85055235578156, 'lcSpeedGain': 4.421559372617682}, # 5hr
-    # "3b": {'maxSpeed': 32.628733908202186, 'minGap': 1.341402259779661, 'accel': 3.6534628045970376, 'decel': 2.161073526928775, 'tau': 1.4679912202190781, 'lcStrategic': 0.09167743180863308, 'lcCooperative': 0.5573275937293471, 'lcAssertive': 2.6157238740399222, 'lcSpeedGain': 1.5338412219673294}, # with buffer
+    "1a": {'maxSpeed': 41.45799333960509, 'minGap': 0.8065823297087642, 'accel': 3.8158930054247264, 'decel': 2.211603230590194, 'tau': 1.2083766531172269},
+    "1b": {'maxSpeed': 25.715678444013175, 'minGap': 2.2088094571762293, 'accel': 2.030157720874511, 'decel': 3.6485793102399064, 'tau': 0.8666934208096678},
+    "1c": {'maxSpeed': 25.000756563797253, 'minGap': 2.9621156592347, 'accel': 3.708169898135943, 'decel': 3.0204373206545014, 'tau': 0.9055427000926529},
+    "2a": {'lcStrategic': 0.7876986211033354, 'lcCooperative': 0.08458830257554448, 'lcAssertive': 4.601334269701921, 'lcSpeedGain': 1.966663592148586},
+    "2b": {'lcStrategic': 3.3204152382867425, 'lcCooperative': 0.052435545054377426, 'lcAssertive': 0.7836149617953835, 'lcSpeedGain': 4.782575555064804},
+    "2c": {'lcStrategic': 4.526549186142663, 'lcCooperative': 0.019830269615668458, 'lcAssertive': 2.5573982916027416, 'lcSpeedGain': 4.5500350580479605},
+    "3a": {'maxSpeed': 41.80971919018471, 'minGap': 2.819152834813575, 'accel': 3.887791712040302, 'decel': 2.2268770068783694, 'tau': 1.1375234096286215, 'lcStrategic': 4.879437594346083, 'lcCooperative': 0.0202092428422956, 'lcAssertive': 1.3340510471772142, 'lcSpeedGain': 1.4682032878006757},
     "3b": {'maxSpeed': 35.46631186967486, 'minGap': 2.94390525189298, 'accel': 2.3655452248462066, 'decel': 3.207636533267079, 'tau': 1.6603715426741472, 'lcStrategic': 0.5091719209419492, 'lcCooperative': 0.8854467728463593, 'lcAssertive': 4.815590691539943, 'lcSpeedGain': 1.1639111046014528},
-    "3c": {'maxSpeed': 41.67790488305487, 'minGap': 2.944472588322073, 'accel': 1.0413394249871004, 'decel': 1.0015581105726545, 'tau': 2.8756688917028996, 'lcStrategic': 3.203048947163652, 'lcCooperative': 0.6794410211168292, 'lcAssertive': 0.11095047910487453, 'lcSpeedGain': 3.1717237808418135}
+    "3c": {'maxSpeed': 26.037841649451476, 'minGap': 0.8618582127739437, 'accel': 3.357982900905707, 'decel': 1.7780313129361798, 'tau': 1.7720624615818765, 'lcStrategic': 4.633761710964412, 'lcCooperative': 0.6672327283793651, 'lcAssertive': 4.907166015300293, 'lcSpeedGain': 4.99508528371374}
 }
-
-
-rerun_labels = ["1c", "3c"]
 
 mainline = ["E0_1", "E0_2", "E0_3", "E0_4",
             "E1_2", "E1_3", "E1_4", "E1_5",
@@ -149,11 +146,8 @@ def macro_rmse(asm_file, macro_data):
         V: mph
         Rho: -
     '''
-    dx =160.934
-    dt =30
-    
     hours = 5
-    length = int(hours * 3600/dt)-1 #360
+    length = int(hours * 3600/DT)-1 #360
 
     # simulated data
     Q, Rho, V = macro_data["flow"][:length,:], macro_data["density"][:length,:], macro_data["speed"][:length,:]
@@ -164,7 +158,6 @@ def macro_rmse(asm_file, macro_data):
     print(n_space, n_time)
     V = np.flipud(V)
     Rho = np.flipud(Rho)
-
 
     # Initialize an empty DataFrame to store the aggregated ASM data
     aggregated_data = pd.DataFrame()
@@ -205,11 +198,11 @@ def macro_rmse(asm_file, macro_data):
     }).reset_index()
 
     # Pivot the data for heatmaps
-    volume_pivot = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_volume').values[:n_space, :n_time] # convert from veh/30s/lane to veh/hr/lane
-    speed_pivot = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_speed').values[:n_space, :n_time]
-    density_pivot = volume_pivot/speed_pivot # veh/mile/lane
+    volume_rds = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_volume').values[:n_space, :n_time] # convert from veh/30s/lane to veh/hr/lane
+    speed_rds = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_speed').values[:n_space, :n_time]
+    density_rds = volume_rds/speed_rds # veh/mile/lane
 
-    volume_pivot = np.flipud(volume_pivot)
+    volume_rds = np.flipud(volume_rds)
 
 
     # OCC = Rho * 5 *100
@@ -217,7 +210,7 @@ def macro_rmse(asm_file, macro_data):
     # visualize for debugging purpose
     # plt.figure(figsize=(13, 6))
     # plt.subplot(1, 2, 1)
-    # sns.heatmap(density_pivot, cmap='viridis', vmin=0) # veh/hr/lane
+    # sns.heatmap(density_rds, cmap='viridis', vmin=0) # veh/hr/lane
 
     # plt.subplot(1, 2, 2)
     # sns.heatmap(Rho, cmap='viridis', vmin=0)
@@ -227,20 +220,119 @@ def macro_rmse(asm_file, macro_data):
 
    
     print("Validation RMSE (macro simulation data)")
-    diff = volume_pivot - Q
+    diff = volume_rds - Q
     norm = np.sqrt(np.nanmean(diff.flatten()**2))
     print("Volume q: {:.2f} veh/hr/lane".format(norm))  
           
-    diff = speed_pivot - V
+    diff = speed_rds - V
     norm = np.sqrt(np.nanmean(diff.flatten()**2))
     print("Speed v: {:.2f} mph".format(norm))
 
-    diff = density_pivot - Rho
+    diff = density_rds - Rho
     norm = np.sqrt(np.nanmean(diff.flatten()**2))
     print("Density rho: {:.2f} veh/mile/lane".format(norm))
 
 
     return
+
+
+def run_with_param(parameter, exp_label="", rerun=True, lane_by_lane_macro=False, plot_ts=False, plot_det=False, plot_macro=False):
+    '''
+    rerun SUMO using provided parameters
+    generate FCD and detector data
+    convert FCD to macro data
+    save macro data
+    '''
+    fcd_name = "fcd_i24_" + exp_label
+    folder_path = f'simulation_result/{exp_label}'
+    fcd_file = fcd_name+".xml"
+    traj_file = fcd_name+"_mainline.csv"
+    trajectory_file_name = traj_file.split(".")[0]
+
+    if rerun: # save things in simulation_result/
+        i24.update_sumo_configuration(best_param_map['default'])
+        i24.update_sumo_configuration(parameter)
+        i24.run_sumo(sim_config = "I24_scenario.sumocfg", fcd_output =fcd_name+"_full.xml")
+
+        # filter fcd data with start time and end time
+        # SUMO simulates 4AM-10AM, filter 5-10AM
+        reader.filter_trajectory_data(input_file=fcd_name+"_full.xml", output_file=fcd_name+".xml", 
+                                      start_time=3600, end_time=21600)
+
+        # Generate trajectories in mainline.csv
+        reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+"_mainline.csv", link_names=mainline)
+
+        # Edie's into macro data
+        macro_data = macro.compute_macro_generalized(fcd_name+"_mainline.csv", dx=DX, dt=DT, start_time=0, end_time=18000, start_pos =0, end_pos=5730,
+                                        save=True, plot=False) # plot later
+        
+        if lane_by_lane_macro:
+            link_dict = {
+                "lane1": ["E0_4","E1_5","E3_4","E5_3","E7_4","E8_3"], # left-most lane
+                "lane2": ["E0_3","E1_4","E3_3","E5_2","E7_3","E8_2"],
+                "lane3": ["E0_2","E1_3","E3_2","E5_1","E7_2","E8_1"],
+                "lane4": ["E0_1","E1_2","E3_1","E5_0","E7_1","E8_0"] # right-most lane
+            }
+            # Generate lane-specific trajectories and save as {fcd_name}_lane1.csv etc.
+            reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+".csv", link_names=link_dict)
+
+            # Edie's into macro data
+            for key in link_dict:
+                macro_data = macro.compute_macro_generalized(fcd_name+f"_{key}.csv", dx=DX, dt=DT, start_time=0, end_time=18000, start_pos =0, end_pos=5730,
+                                        save=True, plot=0) # plot later
+        
+        # Move simulated files to simulation_result/EXP_LABEL   
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print(f"Created directory: {folder_path}")
+
+        # move fcd
+        if os.path.exists(fcd_file):
+            shutil.move(fcd_file, os.path.join(folder_path, fcd_file))
+
+        # move detector outputs
+        files_to_move = glob.glob('*.out.xml') + glob.glob(f'*_{exp_label}.csv')
+        for file_name in files_to_move:
+            if os.path.exists(file_name):
+                shutil.move(file_name, os.path.join(folder_path, file_name))
+
+        # move all csv files that contains {fcd_name}
+        files_to_move = glob.glob(f'*{fcd_name}*.csv')
+        for file_name in files_to_move:
+            if os.path.exists(file_name):
+                shutil.move(file_name, os.path.join(folder_path, file_name))
+
+        # move all .pkl files that contains {fcd_name}
+        files_to_move = glob.glob(f'*{fcd_name}*.pkl')
+        for file_name in files_to_move:
+            if os.path.exists('calibration_result/'+file_name):
+                shutil.move('calibration_result/'+file_name, os.path.join(folder_path, file_name))
+
+    # plot time-space diagram for this simulation
+    if plot_ts:
+        vis.visualize_fcd(folder_path+"/"+fcd_name+".xml") #, lanes=mainline)  # plot mainline only
+
+    # plot RDS and simulated detector measurements on the same plots
+    if plot_det:
+        fig = None
+        axes = None
+        quantity = "speed"
+        experiments = ["RDS", exp_label]
+        for exp_label in experiments:
+            fig, axes = vis.plot_line_detectors(folder_path, RDS_DIR, measurement_locations, quantity, fig, axes, exp_label) # read csv files, continuously adding plots to figure
+        plt.show()
+
+    # plot macro 3 plots
+    if plot_macro:
+        # macro_name = rf'simulation_result/{exp_label}/macro_{trajectory_file_name}.pkl'
+        macro_pkl = rf'simulation_result/{exp_label}/macro_fcd_i24_{exp_label}_mainline.pkl'
+        with open(macro_pkl, 'rb') as file:
+            macro_sim = pickle.load(file, encoding='latin1')
+        macro.plot_macro(macro_sim, dx=DX, dt=DT, hours=5)
+    return
+
+
+
 
 def training_rmspe(exp_label):
 
@@ -253,27 +345,34 @@ def training_rmspe(exp_label):
     '''
 
     # Read and extract data
-    print("Training RMSPE (detectors)")
+    print(f"{exp_label} Training RMSPE: ")
     sim_dir = f'simulation_result/{exp_label}'
 
     # get RDS measurements
     measured_output = reader.rds_to_matrix(rds_file=RDS_DIR, det_locations=measurement_locations)
     # read simulated measurements from det_XXX.out.xml
     sim_output = reader.extract_sim_meas(measurement_locations=[location for location in measurement_locations], file_dir=sim_dir)
+    
     # select the same time ranges in measurement and sim 5AM-10AM
-    start_idx = 60 #int(5*60/5)
-    end_idx = min(sim_output["speed"].shape[1], 5*12)-1 # the last time interval of the simulated measurements are usually inaccurate (boundary issue)
-    end_idx_rds = start_idx + end_idx # at most three hours of simulated measurements
+    start_idx_rds = 60 #int(5*60/5)
+    start_idx_sumo = 12 # sumo starts at 4AM to allow some buffer
+    length = 5*12-1 #5hr
 
     keys = ["volume", "speed", "occupancy"]
     print_labels = ["Volume q: ", "Speed v: ", "Occupancy o: "]
 
+    epsilon = 1e-6  # Small constant to stabilize logarithmic transformation
+
     for i, key in enumerate(keys):
-        diff = sim_output[key][:, 2:end_idx] - np.nan_to_num(measured_output[key][:, start_idx+2:end_idx_rds], nan=0)
-        denom = measured_output[key][:, start_idx+2:end_idx_rds]
-        relative_diff = np.divide(diff, denom, out=np.full_like(diff, np.nan), where=denom != 0) # Avoid division by zero: set entries in relative_diff to np.nan where denom is zero
-        error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
-        print(print_labels[i]+"{:.2f}".format(error))
+        sim1_vals = sim_output[key][:, start_idx_sumo:start_idx_sumo+length]
+        sim2_vals = measured_output[key][:, start_idx_rds: start_idx_rds+length]
+        
+        log_sim1 = np.log(sim1_vals + epsilon)
+        log_sim2 = np.log(sim2_vals + epsilon)
+        
+        log_diff = log_sim1 - log_sim2
+        error = np.sqrt(np.nanmean((log_diff**2).flatten()))
+        print(print_labels[i] + "{:.2f}".format(error))
 
     return
 
@@ -294,6 +393,7 @@ def validation_rmspe(exp_label):
         V: mph
         Rho: -
     '''
+    print(f"{exp_label} Validation RMSPE: ")
     dt = 30
     hours = 5
     length = int(hours * 3600/dt)-1 #360
@@ -329,12 +429,8 @@ def validation_rmspe(exp_label):
 
     # Read the CSV file in chunks and process each chunk
     chunk_size = 10000  # Adjust the chunk size based on your memory capacity
-    # flag = 0
-    for chunk in pd.read_csv(asm_file, chunksize=chunk_size):
+    for chunk in pd.read_csv(ASM_FILE, chunksize=chunk_size):
         processed_chunk = process_chunk(chunk) # flow: veh/hr/lane
-        # if flag == 0:
-        #     print(processed_chunk["unix_time"][1000:1050]-1.699870e+09)
-        #     flag = 1
         aggregated_data = pd.concat([aggregated_data, processed_chunk], ignore_index=True)
 
     # Define the range of mile markers to plot
@@ -361,149 +457,108 @@ def validation_rmspe(exp_label):
     # print(resampled_data.head())
 
     # Pivot the data for heatmaps
-    volume_pivot = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_volume').values[:n_space, :n_time] # convert from veh/30s/lane to veh/hr/lane
-    speed_pivot = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_speed').values[:n_space, :n_time]
-    density_pivot = volume_pivot/speed_pivot # veh/mile/lane
-    volume_pivot = np.flipud(volume_pivot)
-
-
-    # OCC = Rho * 5 *100
+    volume_rds = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_volume').values[:n_space, :n_time] # convert from veh/30s/lane to veh/hr/lane
+    speed_rds = resampled_data.pivot(index='milemarker', columns='unix_time', values='total_speed').values[:n_space, :n_time]
+    density_rds = volume_rds/speed_rds # veh/mile/lane
+    volume_rds = np.flipud(volume_rds)
 
     # visualize for debugging purpose
-    # plt.figure(figsize=(13, 6))
+    # plt.figure(figsize=(6, 6))
     # plt.subplot(1, 2, 1)
-    # sns.heatmap(speed_pivot, cmap='viridis', vmin=0) # veh/hr/lane
+    # plt.imshow(density_rds, cmap='viridis', vmin=0) # veh/hr/lane
 
     # plt.subplot(1, 2, 2)
-    # sns.heatmap(V, cmap='viridis', vmin=0, vmax=80)
+    # plt.imshow(Rho, cmap='viridis', vmin=0, vmax=80)
 
     # plt.tight_layout()
     # plt.show()
-    # print(speed_pivot, V)
-    # print(density_pivot, Rho)
-    # print(volume_pivot, Q)
-
-
-   
-    # print("Validation RMSE (macro simulation data)")
-    # diff = volume_pivot - Q
-    # norm = np.sqrt(np.nanmean(diff.flatten()**2))
-    # print("Volume q: {:.2f} veh/hr/lane".format(norm))  
-          
-    # diff = speed_pivot - V
-    # norm = np.sqrt(np.nanmean(diff.flatten()**2))
-    # print("Speed v: {:.2f} mph".format(norm))
-
-    # diff = density_pivot - Rho
-    # norm = np.sqrt(np.nanmean(diff.flatten()**2))
-    # print("Density rho: {:.2f} veh/mile/lane".format(norm))
 
     keys = ["volume", "speed", "density"]
     print_labels = ["Volume q: ", "Speed v: ", "Density rho: "]
     sims = [Q, V, Rho]
-    meas = [volume_pivot, speed_pivot, density_pivot]
+    meas = [volume_rds, speed_rds, density_rds]
+
+    epsilon = 1e-6  # Small constant to stabilize logarithmic transformation
 
     for i, key in enumerate(keys):
-        diff = sims[i] - np.nan_to_num(meas[i], nan=0)
-        denom = meas[i]
-        relative_diff = np.divide(diff, denom, out=np.full_like(diff, np.nan), where=denom != 0) # Avoid division by zero: set entries in relative_diff to np.nan where denom is zero
-        error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
-        # print(key, meas[i])
-        print(print_labels[i]+"{:.2f}".format(error))
+        sim1_vals = sims[i]
+        sim2_vals = meas[i]
+        log_sim1 = np.log(sim1_vals + epsilon)
+        log_sim2 = np.log(sim2_vals + epsilon)
+        log_diff = log_sim1 - log_sim2
+        error = np.sqrt(np.nanmean((log_diff**2).flatten()))
+        print(print_labels[i] + "{:.2f}".format(error))
 
     return
 
-def run_with_param(parameter, exp_label="", rerun=True, plot_ts=False, plot_det=False, plot_macro=False):
-    '''
-    rerun SUMO using provided parameters
-    generate FCD and detector data
-    convert FCD to macro data
-    save macro data
-    '''
-    fcd_name = "fcd_i24_" + exp_label
-    folder_path = f'simulation_result/{exp_label}'
-    fcd_file = fcd_name+".xml"
-    traj_file = fcd_name+"_mainline.csv"
-    trajectory_file_name = traj_file.split(".")[0]
 
-    if rerun: # save things in simulation_result/
-        i24.update_sumo_configuration(best_param_map['default'])
-        i24.update_sumo_configuration(parameter)
-        i24.run_sumo(sim_config = "I24_scenario.sumocfg", fcd_output =fcd_name+"_full.xml")
-
-        # filter fcd data with start time and end time
-        # SUMO simulates 4AM-10AM, filter 5-10AM
-        reader.filter_trajectory_data(input_file=fcd_name+"_full.xml", output_file=fcd_name+".xml", 
-                                      start_time=3600, end_time=21600)
-
-        # read detector outputs
-        # for meas in measurement_locations:
-        #     reader.det_to_csv(xml_file=f"det_{meas}.out.xml", suffix="_"+EXP) 
-
-        # Generate trajectories in mainline.csv
-        reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+"_mainline.csv", link_names=mainline)
-
-        # Edie's into macro data
-        macro_data = macro.compute_macro_generalized(fcd_name+"_mainline.csv", dx=160.934, dt=30, start_time=0, end_time=18000, start_pos =0, end_pos=5730,
-                                        save=True, plot=False) # plot later
-        
-        # Move simulated files to simulation_result/EXP_LABEL   
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-            print(f"Created directory: {folder_path}")
-
-        # move fcd
-        if os.path.exists(fcd_file):
-            shutil.move(fcd_file, os.path.join(folder_path, fcd_file))
-
-        # move detector outputs
-        files_to_move = glob.glob('*.out.xml') + glob.glob(f'*_{exp_label}.csv')
-        for file_name in files_to_move:
-            if os.path.exists(file_name):
-                shutil.move(file_name, os.path.join(folder_path, file_name))
-
-        # move fcd_name+"_mainline.csv"
-        if os.path.exists(traj_file):
-            shutil.move(traj_file, os.path.join(folder_path, traj_file))
-
-        # save macro
-        macro_name = f'macro_fcd_i24_{exp_label}_mainline.pkl'
-        # if os.path.exists('calibration_result/'+macro_name):
-        shutil.move('calibration_result/'+macro_name, os.path.join(folder_path, macro_name))
-        
-    # plot time-space diagram for this simulation
-    if plot_ts:
-        vis.visualize_fcd(folder_path+"/"+fcd_name+".xml") #, lanes=mainline)  # plot mainline only
-
-    # plot RDS and simulated detector measurements on the same plots
-    if plot_det:
-        fig = None
-        axes = None
-        quantity = "speed"
-        experiments = ["RDS", exp_label]
-        for exp_label in experiments:
-            fig, axes = vis.plot_line_detectors(folder_path, RDS_DIR, measurement_locations, quantity, fig, axes, exp_label) # read csv files, continuously adding plots to figure
-        plt.show()
-
-    # plot macro 3 plots
-    if plot_macro:
-        # macro_name = rf'simulation_result/{exp_label}/macro_{trajectory_file_name}.pkl'
-        macro_pkl = rf'simulation_result/{exp_label}/macro_fcd_i24_{exp_label}_mainline.pkl'
-        with open(macro_pkl, 'rb') as file:
-            macro_sim = pickle.load(file, encoding='latin1')
-        macro.plot_macro(macro_sim, dx=160.934, dt=30, hours=5)
-    return
 
 if __name__ == "__main__":
 
     
-    # EXP = "1a"
-    for EXP in ["3b"]: #["1a","1b", "1c","2a","2b","2c","3a","3b","3c"]:
-        # reset parameters
-        # i24.update_sumo_configuration(best_param_map['default'])
-        # i24.update_sumo_configuration(best_param_map[EXP])
-        run_with_param(best_param_map[EXP], exp_label=EXP, rerun=True, plot_ts=False, plot_det=0, plot_macro=True)
+    # ===== rerun and save data ============= 
+    for EXP in ["1a","1b", "1c","2a","2b","2c","3a","3b", "3c"]:
+        # run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, lane_by_lane_macro=1,plot_ts=0, plot_det=0, plot_macro=0)
         # training_rmspe(EXP)
-        # validation_rmspe(EXP)
+        validation_rmspe(EXP)
+        print("\n")
 
-    # vis.read_asm(asm_file)
+    # ===== plot detector line plot ============= 
+    # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\det_c.png'
+    # fig = None
+    # axes = None
+    # quantity = "speed"
+    # experiments = ["RDS", "1c", "2c", "3c"]
+    # for exp_label in experiments:
+    #     folder_path = f'simulation_result/{exp_label}'
+    #     fig, axes = vis.plot_line_detectors(folder_path, RDS_DIR, measurement_locations, quantity, fig, axes, exp_label) # read csv files, continuously adding plots to figure
+    # # save
+    # fig.savefig(save_path, dpi=300, bbox_inches='tight')  # Save with high resolution
+    # plt.show()
+
+    # ===== plot 9-grid plot ============= 
+    # quantity = "speed"
+    # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\grid_speed.png'
+    # fig=None
+    # axes=None
+    # for i,exp_label in enumerate(["1a","1b", "1c","2a","2b","2c","3a","3b","3c"]):
+    #     macro_pkl = rf'simulation_result/{exp_label}/macro_fcd_i24_{exp_label}_mainline.pkl'
+    #     with open(macro_pkl, 'rb') as file:
+    #         macro_data = pickle.load(file, encoding='latin1')
+    #     fig, axes = vis.plot_macro_grid(macro_data, 
+    #                         quantity, 
+    #                         dx=160.934, dt=30, 
+    #                         fig=fig, axes=axes,
+    #                         ax_idx=i, label=exp_label)
+    # fig.savefig(save_path, dpi=300, bbox_inches='tight') 
+    # plt.show()
+
+    # ======= plot ASM RDS data ===========
+    # vis.read_asm(ASM_FILE)
+    # plt.show()
+
+    # ======= travel time lane-specific =====
+    # fig = None
+    # ax = None
+    # for i,exp_label in enumerate(["rds"]):
+    #     fig, ax = vis.plot_travel_time(fig, ax, exp_label)
+    #     ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%H:%M'))
+    #     ax.xaxis.set_major_locator(plt.matplotlib.dates.HourLocator(interval=1))
+    #     ax.set_ylim([0,1550])
+    #     ax.legend(loc='upper right', fontsize=16)
+    #     ax.set_xlabel("Departure time")
+    #     ax.set_ylabel("Travel time (sec)")
+    # plt.tight_layout(rect=[0, 0, 1, 1])
+    # plt.show()
+
+    # ======= travel time lane-specific 9 grid =====
+    # fig = None
+    # axes = None
+    # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\grid_travel_time.png'
+    # for i,exp_label in enumerate(["1a","1b", "1c","2a","2b","2c","3a","3b","3c"]):
+    #     if exp_label in ["RDS", "rds"]:
+    #         macro_data = None # read from ASM file in the function
+    #     else:
+    #         fig, axes = vis.plot_travel_time_grid(fig, axes, i, exp_label)
+    # fig.savefig(save_path, dpi=300, bbox_inches='tight') 
+    # plt.show()

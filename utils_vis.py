@@ -15,7 +15,10 @@ import datetime
 import csv
 import shutil
 from xml.dom import minidom
+import utils_macro as macro
+import pickle
 
+ASM_FILE =  "../../data/2023-11-13-ASM.csv"
 
 def scatter_time_space(data_path, file_name, highlight_leaders=False):
     """
@@ -309,12 +312,12 @@ def plot_macro_grid(macro_data, quantity, dx=160.934, dt=30, fig=None, axes=None
     Returns: fig, axes
     """
     fs = 18
-    hours = 3
+    hours = 5
     length = int(hours * 3600/dt)
     plt.rcParams['font.family'] = 'Times New Roman'
     plt.rcParams['font.size'] = fs
     if fig is None:
-        fig, axes = plt.subplots(3,3, figsize=(18, 14))
+        fig, axes = plt.subplots(3,3, figsize=(20, 16))
         axes = axes.flatten()
 
     unit_dict = {
@@ -792,7 +795,7 @@ def plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", 
         "occupancy": "%"
     }
     max_dict = {
-        "speed": 60,
+        "speed": 70,
         "volume": 2400,
         "occupancy": 100
     }
@@ -809,7 +812,7 @@ def plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", 
 
     for i, det in enumerate(measurement_locations):
         ax = axes[i]
-        ax.plot(sim_dict[quantity][i, :], linestyle='--', marker='o', label=label)
+        ax.plot(sim_dict[quantity][i, :], linestyle='--', marker='o', color='k' if label == "gt" else None, label=label)
         parts = det.split("_")
         title = f"{parts[0].capitalize()} lane {int(parts[1]) + 1}"
         ax.set_title(title, fontsize=fs)
@@ -887,7 +890,7 @@ def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="volu
 
     # Create a grid of subplots
     if fig is None:
-        fig, axes = plt.subplots(nrows=5, ncols=4, figsize=(20, 18))
+        fig, axes = plt.subplots(nrows=5, ncols=4, figsize=(20, 20))
 
     axes = axes.flatten()
     # Determine the y-axis range across all plots
@@ -897,7 +900,11 @@ def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="volu
     for i, det in enumerate(measurement_locations):
         ax = axes[i]
         # ax.plot(sim_dict[quantity][i, :], linestyle='--', marker='o', label=label)
-        ax.plot(time_index_rds, sim_dict[quantity][i,start_idx:start_idx+num_points],  linestyle='--', marker='o', label=label)
+        ax.plot(time_index_rds, 
+                sim_dict[quantity][i,start_idx:start_idx+num_points],  
+                linestyle='--', marker='o', 
+                color='k' if label=="RDS" else None, 
+                label=label)
 
         parts = det.split('_')
         ax.set_title( f"MM{parts[0]}.{parts[1]} lane {int(parts[2])+1}", fontsize=fs)
@@ -908,11 +915,127 @@ def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="volu
             ax.set_ylabel(f"{quantity.capitalize()} ({unit_dict[quantity]})")
         if i>=16:
             ax.set_xlabel("Time (hour of day)")
+        ax.tick_params(axis='x', rotation=45)
 
     # Adjust the layout to make room for the legends
     axes[3].legend(loc='upper left', bbox_to_anchor=(1, 1))
     plt.tight_layout(rect=[0, 0, 1, 1])
     return fig, axes
+
+
+def plot_travel_time(fig=None, ax=None, label=''):
+    """
+    Iteratively plot departure time vs. travel time
+    For I-24 scenario
+
+    Parameters:
+    ----------
+    fig, axes, label: for iterative plotting
+
+    Returns: fig, axes
+    """
+    HOURS = 5 # hours of RDS data to plot
+    fs = 20
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = fs
+    start_time_pd = pd.Timestamp('05:00')  # 5:00 AM
+    length = int(HOURS *3600/30)
+
+    # time_range = start_time + pd.to_timedelta(departure_time, unit='s')
+    if fig is None:
+        fig, ax = plt.subplots()
+
+    if label in ["RDS", "rds"]:
+        speed_columns = ['lane1_speed',  'lane2_speed', 'lane3_speed','lane4_speed']
+        aggregated_data= pd.read_csv(ASM_FILE, usecols=['unix_time', 'milemarker']+speed_columns)
+        # Define the range of mile markers to plot
+        milemarker_min = 54.1
+        milemarker_max = 57.6
+        start_time = aggregated_data['unix_time'].min()+3600 # data starts at 4AM CST, but we want to start at 5AM
+        end_time = start_time + HOURS*3600 # only select the first x hours
+
+        # Filter milemarker within the specified range
+        filtered_data = aggregated_data[
+            (aggregated_data['milemarker'] >= milemarker_min) &
+            (aggregated_data['milemarker'] <= milemarker_max) &
+            (aggregated_data['unix_time'] >= start_time) &
+            (aggregated_data['unix_time'] <= end_time)
+        ]
+        # Convert unix_time to datetime if needed and extract hour (UTC to Central standard time in winter)
+        filtered_data['unix_time'] = pd.to_datetime(filtered_data['unix_time'], unit='s') - pd.Timedelta(hours=6)
+        filtered_data.set_index('unix_time', inplace=True) # filtered_data is every 10sec, flow:
+        # print(filtered_data.head(10))
+        resampled_data = filtered_data.groupby(['milemarker', pd.Grouper(freq='30s')]).agg({
+            'lane1_speed': 'mean',
+            'lane2_speed': 'mean',
+            'lane3_speed': 'mean',
+            'lane4_speed': 'mean'
+        }).reset_index()
+        n_space = 35
+        for speed_column in speed_columns:
+            speed_rds = resampled_data.pivot(index='milemarker', columns='unix_time', values=speed_column).values[:n_space, :length]
+            speed_matrix = np.flipud(speed_rds).T/ 2.23694
+            # print(speed_matrix.shape)
+            departure_time, travel_time = macro.calc_travel_time(speed_matrix) # mph to m/s
+            time_range = [start_time_pd + pd.Timedelta(seconds=sec) for sec in departure_time]
+            ax.plot(time_range, travel_time,
+                label = speed_column[:5])
+            # ax.imshow(speed_matrix)
+        
+    else:
+        for lane in ["lane1", "lane2", "lane3", "lane4"]:
+            macro_pkl = rf'simulation_result/{label}/macro_fcd_i24_{label}_{lane}.pkl'
+            
+            with open(macro_pkl, 'rb') as file:
+                macro_data = pickle.load(file, encoding='latin1')
+            speed_matrix = macro_data["speed"][:length,:]
+            # print(speed_matrix.shape)
+            departure_time, travel_time = macro.calc_travel_time(speed_matrix)
+            time_range = [start_time_pd + pd.Timedelta(seconds=sec) for sec in departure_time]
+            ax.plot(time_range, travel_time, label = lane)
+            # print(lane)
+            # ax.imshow(speed_matrix)
+
+    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%H:%M'))
+    ax.xaxis.set_major_locator(plt.matplotlib.dates.HourLocator(interval=1))
+    ax.set_ylim([0,1550])
+    ax.legend(loc='upper right', fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    return fig, ax
+
+
+
+def plot_travel_time_grid(fig=None, axes=None, ax_idx=0, label=''):
+    """
+    Plot lane-specific travel time vs. departure time in a 3x3 grid plot.
+    For comparison of result in I-24 scenario
+
+    Parameters:
+    ----------
+    fig, axes, ax_idx, label: allow iterative plotting
+
+    Returns: fig, axes
+    """
+    fs = 20
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = fs
+    if fig is None:
+        fig, axes = plt.subplots(3,3, figsize=(20, 16))
+        axes = axes.flatten()
+
+    fig, ax = plot_travel_time(fig=fig, ax=axes[ax_idx], label=label)
+    ax.set_title("Exp "+label, fontsize=fs)
+
+    
+    if ax_idx >= 6:
+        ax.set_xlabel("Departure time")
+    if ax_idx in [0,3,6]:
+        ax.set_ylabel("Travel time (sec)")
+  
+    plt.tight_layout()
+
+    return fig, axes
+
 
 
 def plot_line_detectors_i24(sumo_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):

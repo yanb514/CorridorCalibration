@@ -4,7 +4,7 @@
     
     
     
-  <vType id="trial" carFollowModel="IDM" speedFactor="1" maxSpeed="35.46631186967486" minGap="2.94390525189298" accel="2.3655452248462066" decel="3.207636533267079" tau="1.6603715426741472" emergencyDecel="8.00" delta="4.00" laneChangeModel="LC2013" lcStrategic="0.5091719209419492" lcCooperative="0.8854467728463593" lcAssertive="4.815590691539943" lcSpeedGain="1.1639111046014528" lcKeepRight="0.0" lcOvertakeRight="0.877" />
+  <vType id="trial" carFollowModel="IDM" speedFactor="1" maxSpeed="26.037841649451476" minGap="0.8618582127739437" accel="3.357982900905707" decel="1.7780313129361798" tau="1.7720624615818765" emergencyDecel="8.00" delta="4.00" laneChangeModel="LC2013" lcStrategic="4.633761710964412" lcCooperative="0.6672327283793651" lcAssertive="4.907166015300293" lcSpeedGain="4.99508528371374" lcKeepRight="0.0" lcOvertakeRight="0.877" />
   
        
     

@@ -2,14 +2,10 @@ import gzip
 import csv
 import re
 import pandas as pd
-# import matplotlib.pyplot as plt
-# from matplotlib.dates import DateFormatter
 import numpy as np
 import os
 import xml.etree.ElementTree as ET
 from scipy.interpolate import interp1d
-# from multiprocessing import Pool, cpu_count
-# from collections import defaultdict
 from collections import OrderedDict
 
 def extract_mile_marker(link_name):
@@ -237,18 +233,28 @@ def extract_mean_speed_all_lanes(xml_file):
         tt = 1300/speeds
         travel_time_all_lane[lane_id] = tt
 
-
     return lane_speeds, travel_time_all_lane, time_intervals
-
-
 
 
 
 def parse_and_reorder_xml(xml_file, output_csv, link_names=None):
     '''
     Parse xml file (ordered by timestep) to a csv file (ordered by vehicleID, in NGSIM format)
+    'VehicleID', 'Time', 'LaneID', 'LocalY', 'MeanSpeed', 'MeanAccel', 'VehLength', 'VehClass', 'FollowerID', 'LeaderID'
     link_names: selected links that the data will be written (usually to filter mainline only)
     if link_names is set to None, then no data will be filtered (select all links)
+
+    Parameters:
+    ----------
+    xml_file : string
+        path to the fcd xml file generated during run_sumo
+    output_csv : string
+        path of the new csv file to store the output data
+    link_names : 
+        None (default): no data will be filtered. Write all data to output_csv
+        list : link names specified as a list of strings. Only write data where link_name is in the given list
+        dict: {key, val}: write to multiple output_csv files, each append with the key string. Val corresponding to each key is a list of link names. Useful to specified multiple lanes
+    Returns: None
     '''
     # OrderedDict to store data by vehicle id, preserving the order of first appearance
     vehicle_data = OrderedDict()
@@ -291,6 +297,7 @@ def parse_and_reorder_xml(xml_file, output_csv, link_names=None):
 
     # Write the result to a CSV file
     print("writing to csv...")
+    multiple_writers = False
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
         # Write the header
@@ -302,11 +309,27 @@ def parse_and_reorder_xml(xml_file, output_csv, link_names=None):
             for vehicle_id in vehicle_data:
                 for row in vehicle_data[vehicle_id]:
                     writer.writerow(row)
-        else: # Write selected links data
+        elif isinstance(link_names, list) : # when link_names is a list of links, Write selected links data
             for vehicle_id in vehicle_data:
                 for row in vehicle_data[vehicle_id]:
                     if row[2] in link_names:
                         writer.writerow(row)
+        else:
+            multiple_writers = True
+
+    if multiple_writers:
+        for key, links in link_names.items():
+            csv_name = output_csv.split(".")[0]+"_"+key+".csv"
+            with open(csv_name, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                # Write the header
+                writer.writerow(['VehicleID', 'Time', 'LaneID', 'LocalY', 'MeanSpeed', 'MeanAccel', 
+                                'VehLength', 'VehClass', 'FollowerID', 'LeaderID'])
+                for vehicle_id in vehicle_data:
+                    for row in vehicle_data[vehicle_id]:
+                        if row[2] in links:
+                            writer.writerow(row)
+            print(csv_name, " is saved.")
 
     return
 
@@ -314,6 +337,7 @@ def parse_and_reorder_xml(xml_file, output_csv, link_names=None):
 
 def det_to_csv(xml_file, suffix=""):
     '''
+    TO BE REMOVED
     Read detector data {DET}.out.xml and re-write them to .csv files with names {DET}{suffix}.csv
     '''
 

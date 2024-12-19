@@ -10,9 +10,7 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 ## **Table of Contents**  
 - [Features](#features)  
 - [Installation](#installation)  
-- [Usage](#usage)  
-- [Examples](#examples)  
-- [Configuration](#configuration)    
+- [Usage](#usage)     
 - [License](#license)  
 - [Acknowledgments](#acknowledgments)  
 

@@ -12,39 +12,25 @@ sys.path.insert(0, main_path)
 import utils_vis as vis
 import utils_data_read as reader
 import onramp_calibrate as onramp
-import macro
+import utils_macro as macro
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 
 
 pre = "macro_fcd_onramp"
-# suf  = "_byid.pkl"
-# exp = {
-#     "gt": pre + "_gt",
-#     "default": pre + "" + suf,
-#     "1a": pre + "_cf_q" + suf,
-#     "1b": pre + "_cf_v" + suf,
-#     "1c": pre + "_cf_rho" + suf,
-#     "2a": pre + "_lc_q" + suf,
-#     "2b": pre + "_lc_v" + suf,
-#     "2c": pre + "_lc_rho" + suf,
-#     "3a": pre + "_cflc_q" + suf,
-#     "3b": pre + "_cflc_v" + suf,
-#     "3c": pre + "_cflc_rho" + suf,
-# }
 
 best_param_map = {
     "gt": { "maxSpeed": 30.55, "minGap": 2.5, "accel": 1.5, "decel": 2, "tau": 1.4, "lcStrategic": 1.0, "lcCooperative": 1.0,"lcAssertive": 0.5, "lcSpeedGain": 1.0, "lcKeepRight": 0.5},
     "default":  { "maxSpeed": 32.33, "minGap": 2.5, "accel": 2.6, "decel": 4.5, "tau": 1.0, "lcStrategic": 1.0, "lcCooperative": 1.0,"lcAssertive": 0.5, "lcSpeedGain": 1.0, "lcKeepRight": 1.0},
-    "1a":{'maxSpeed': 30.438177087377383, 'minGap': 2.7154211528218135, 'accel': 1.0969376713390915, 'decel': 2.1563832118867414, 'tau': 1.4505762714817776},
-    "1b": {'maxSpeed': 30.497289567282024, 'minGap': 2.859372370601303, 'accel': 1.1086621104873673, 'decel': 1.9781537645876819, 'tau': 1.3856158933432625},
-    "1c": {'maxSpeed': 32.61769788158533, 'minGap': 2.4452488415195335, 'accel': 1.0000135604576716, 'decel': 2.911121855619264, 'tau': 1.564551421039515},
-    "2a": {'lcStrategic': 1.047192894872194, 'lcCooperative': 0.8645387614240766, 'lcAssertive': 0.39033097381529464, 'lcSpeedGain': 0.7680291002087158, 'lcKeepRight': 4.395423080752877, 'lcOvertakeRight': 0.44198548511444324},
-    "2b": {'lcStrategic': 0.47837275159543946, 'lcCooperative': 0.8599243307840726, 'lcAssertive': 0.1909699035864018, 'lcSpeedGain': 4.287017983890513, 'lcKeepRight': 1.6517538483664194, 'lcOvertakeRight': 0.8233156865096709},
-    "2c": {'lcStrategic': 0.3894270091843165, 'lcCooperative': 0.7366477001268105, 'lcAssertive': 0.17652970576044152, 'lcSpeedGain': 2.9021162967920486, 'lcKeepRight': 2.598242165430954, 'lcOvertakeRight': 0.21302179905397123},
-    "3a": {'maxSpeed': 31.44813279984895, 'minGap': 1.8669305739182382, 'accel': 2.2398476082518677, 'decel': 2.5073714738472153, 'tau': 1.3988475504128757, 'lcStrategic': 0.8624217521963465, 'lcCooperative': 0.9789774143646455, 'lcAssertive': 0.43478229746049984, 'lcSpeedGain': 1.1383219615950644, 'lcKeepRight': 4.030227753894549},
-    "3b": {'maxSpeed': 31.605877951781565, 'minGap': 2.4630185481679043, 'accel': 1.6173674534215892, 'decel': 2.4864299905414677, 'tau': 1.4482507669327735, 'lcStrategic': 1.414282922055993, 'lcCooperative': 0.9998246130488315, 'lcAssertive': 0.5454520350957692, 'lcSpeedGain': 3.7567851330319795, 'lcKeepRight': 0.3604351181518853},
-    "3c": {'maxSpeed': 30.53284221198521, 'minGap': 2.7958695360441843, 'accel': 2.4497572915690244, 'decel': 2.4293815796265275, 'tau': 1.374376527326827, 'lcStrategic': 1.3368371035725628, 'lcCooperative': 0.9994681517674497, 'lcAssertive': 0.35088886304156547, 'lcSpeedGain': 1.901166989734572, 'lcKeepRight': 0.7531568339763854},
+    "1a": {'maxSpeed': 30.30259970810396, 'minGap': 2.7534154198947003, 'accel': 1.7048215182278634, 'decel': 1.1045635653229056, 'tau': 1.423368852985237},
+    "1b":  {'maxSpeed': 30.174360517924566, 'minGap': 2.7567104401644023, 'accel': 1.3056948937388382, 'decel': 1.0339046789440762, 'tau': 1.4675601739522783},
+    "1c": {'maxSpeed': 30.16239221599735, 'minGap': 2.818761285099028, 'accel': 1.8654642734403721, 'decel': 1.1648315742640447, 'tau': 0.5260090373730051},
+    "2a": {'lcStrategic': 0.6395627001183368, 'lcCooperative': 0.3642540170229058, 'lcAssertive': 0.08989548250927029, 'lcSpeedGain': 0.4695680888532741, 'lcKeepRight': 4.035116423813789},
+    "2b": {'lcStrategic': 0.46070505058093153, 'lcCooperative': 0.36561260090219133, 'lcAssertive': 0.08206888287016509, 'lcSpeedGain': 1.6306187210090093, 'lcKeepRight': 0.3586279593581411},
+    "2c":  {'lcStrategic': 0.11640222497083824, 'lcCooperative': 0.49394590298899477, 'lcAssertive': 0.24040835673634667, 'lcSpeedGain': 1.7820156343693352, 'lcKeepRight': 2.721390561408376},
+    "3a": {'maxSpeed': 30.116481051532638, 'minGap': 2.9246837509525085, 'accel': 3.6138980697235565, 'decel': 2.999289823239752, 'tau': 1.8452201128675738, 'lcStrategic': 3.0487969842704445, 'lcCooperative': 0.5119595169145059, 'lcAssertive': 0.09087476505204747, 'lcSpeedGain': 0.48288326756878197, 'lcKeepRight': 1.2791339423376002},
+    "3b":  {'maxSpeed': 31.15811238953671, 'minGap': 2.9296054625794694, 'accel': 1.8746961428409035, 'decel': 2.7579099400317237, 'tau': 1.195216410299756, 'lcStrategic': 0.7404221362409035, 'lcCooperative': 0.49611840700450593, 'lcAssertive': 0.08853824678040209, 'lcSpeedGain': 0.7633522724278734, 'lcKeepRight': 0.4078627936600342}, # new resu
+    "3c": {'maxSpeed': 33.754985273472734, 'minGap': 1.9865826126204338, 'accel': 3.0466653512966855, 'decel': 2.8407628417205637, 'tau': 1.5194700473522247, 'lcStrategic': 0.7093501609745403, 'lcCooperative': 0.5958295428510783, 'lcAssertive': 0.4372298978360208, 'lcSpeedGain': 3.033059771569888, 'lcKeepRight': 3.4745560963764546},
 
 }
 
@@ -65,17 +51,29 @@ def training_rmspe():
     sim1_dict = reader.extract_sim_meas(measurement_locations=[location for location in measurement_locations], file_dir=sumo_dir)
     sim2_dict = reader.extract_sim_meas(measurement_locations=["trial_" + location for location in measurement_locations], file_dir=sumo_dir)
 
-    # sim1_dict["density"] = sim1_dict["volume"]/sim1_dict["speed"]
-    # sim2_dict["density"] = sim2_dict["volume"]/sim2_dict["speed"]
-
     keys = ["volume", "speed", "occupancy"]
     print_labels = ["Volume q: ", "Speed v: ", "Occupancy o: "]
-    small_vals = [0.1, 0.1, 0.001]
+
+    epsilon = 1e-6  # Small constant to stabilize logarithmic transformation
+
     for i, key in enumerate(keys):
-        relative_diff = (sim1_dict[key] - sim2_dict[key]) \
-                    / np.nan_to_num(sim1_dict[key], nan=small_vals[i]) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
-        error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
-        print(print_labels[i]+"{:.2f}".format(error))
+        sim1_vals = sim1_dict[key]
+        sim2_vals = sim2_dict[key]
+        
+        # Logarithmic transformation with stabilization
+        log_sim1 = np.log(sim1_vals + epsilon)
+        log_sim2 = np.log(sim2_vals + epsilon)
+        
+        # Compute the difference in log-space
+        log_diff = log_sim1 - log_sim2
+        
+        # Root Mean Square Error in log-space
+        error = np.sqrt(np.nanmean((log_diff**2).flatten()))
+        
+        print(print_labels[i] + "{:.2f}".format(error))
+
+
+
 
     return
 
@@ -93,17 +91,24 @@ def validation_rmspe(exp_name):
 
     keys = ["flow", "speed", "density"]
     print_labels = ["Flow q: ", "Speed v: ", "Density rho: "]
-    small_vals = [0.1, 0.1, 0.001]
-    
-    for i, key in enumerate(keys):
-        denominator = np.nan_to_num(macro_gt[key], nan=small_vals[i])
-        denominator = np.where(denominator == 0, small_vals[i], denominator)
-        relative_diff = (macro_gt[key][:size1,:size2] - macro_sim[key][:size1,:size2]) \
-                    / denominator # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
-        # print(denominator)
-        error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
-        print(print_labels[i]+"{:.2f}".format(error))
 
+    epsilon = 1e-6  # Small constant to stabilize logarithmic transformation
+
+    for i, key in enumerate(keys):
+        sim1_vals = macro_gt[key][:size1,:size2]
+        sim2_vals = macro_sim[key][:size1,:size2]
+        
+        # Logarithmic transformation with stabilization
+        log_sim1 = np.log(sim1_vals + epsilon)
+        log_sim2 = np.log(sim2_vals + epsilon)
+        
+        # Compute the difference in log-space
+        log_diff = log_sim1 - log_sim2
+        
+        # Root Mean Square Error in log-space
+        error = np.sqrt(np.nanmean((log_diff**2).flatten()))
+        
+        print(print_labels[i] + "{:.2f}".format(error))
     return
 
 def run_with_param(parameter, exp_label="", rerun=True, plot_ts=False, plot_det=False, plot_macro=False):
@@ -117,27 +122,32 @@ def run_with_param(parameter, exp_label="", rerun=True, plot_ts=False, plot_det=
     # onramp.run_sumo(sim_config = "onramp_gt.sumocfg")
     if rerun:
         onramp.update_sumo_configuration(parameter)
-        onramp.run_sumo(sim_config = "onramp.sumocfg", fcd_output =fcd_name+".xml")
+        if exp_label in ["GT", "gt"]:
+            onramp.run_sumo(sim_config = "onramp_gt.sumocfg", fcd_output =fcd_name+".xml")
+        else:
+            onramp.run_sumo(sim_config = "onramp.sumocfg", fcd_output =fcd_name+".xml")
 
         sim_output = reader.extract_sim_meas(measurement_locations=[location for location in measurement_locations])
         reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+".csv") #, link_names=mainline)
         macro_data = macro.compute_macro(fcd_name+".csv", dx=10, dt=10, start_time=0, end_time=480, start_pos=0, end_pos=1300, 
                                         save=True, plot=plot_macro)
-        # macro.plot_macro_sim(macro_data)
+        # if plot_macro:
+        #     macro.plot_macro_sim(macro_data)
 
     # plotting
     if plot_ts:
         vis.visualize_fcd(fcd_name+".xml") #, lanes=mainline)  # plot mainline only
     if plot_det:
         # vis.plot_sim_vs_sim(sumo_dir, measurement_locations, quantity="speed")
-        fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", label="gt") # continuously adding plots to figure
-        fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", fig=fig, axes=axes, label=exp_label)
+        fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="speed", label="gt") # continuously adding plots to figure
+        fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="speed", fig=fig, axes=axes, label=exp_label)
         plt.show()
     return
 
 
 def travel_time(fcd_name, rerun_macro=False):
     '''
+    To be removed
     Get lane-specific travel time given varying departure time
     '''
     if rerun_macro:
@@ -173,8 +183,10 @@ def travel_time(fcd_name, rerun_macro=False):
     plt.legend()
     plt.show()
 
+
 def lane_delay(lanearea_xml):
     '''
+    To be removed
     Plot lane-specific quantity in lanearea detector output
     '''
     LANES = ["lane_1", "lane_2"]
@@ -223,12 +235,49 @@ if __name__ == "__main__":
                              'merge_0', 'merge_1', 
                              'downstream_0', 'downstream_1']
 
-    EXP = "default"
-    run_with_param(best_param_map[EXP], exp_label=EXP, rerun=True, plot_ts=False, plot_det=False, plot_macro=False)
+    # ============ generate RMSPE results =========================
+    # EXP = "1c"
+    # run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, plot_ts=False, plot_det=1, plot_macro=1)
     # training_rmspe()
     # validation_rmspe(EXP)
     # lane_delay("lanearea.out.xml")
 
-
-
+    # ============ plot line detectors =========================
+    # quantity = "occupancy" # speed, volume, occupancy
+    # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\synth_detector_occ.png'
+    # fig=None
+    # axes=None
+    # for i,exp_label in enumerate(["gt", "1c","2c","3c"]):
+    #     onramp.update_sumo_configuration(best_param_map[exp_label])
+    #     onramp.run_sumo(sim_config = "onramp.sumocfg")
+    #     fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity=quantity, fig=fig, axes=axes, label=exp_label)
+    # fig.savefig(save_path, dpi=100, bbox_inches='tight') 
     # plt.show()
+
+
+    # ===== plot 9-grid plot ============= 
+    # quantity = "flow" # speed, flow, density
+    # save_path = rf'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\synth_grid_{quantity}.png'
+    # fig=None
+    # axes=None
+    # for i,exp_label in enumerate(["1a","1b", "1c","2a","2b","2c","3a","3b","3c"]):
+    #     macro_pkl = rf'calibration_result/macro_fcd_onramp_{exp_label}.pkl'
+    #     with open(macro_pkl, 'rb') as file:
+    #         macro_data = pickle.load(file, encoding='latin1')
+    #     fig, axes = vis.plot_macro_sim_grid(macro_data, 
+    #                         quantity, 
+    #                         dx=10, dt=10,
+    #                         fig=fig, axes=axes,
+    #                         ax_idx=i, label=exp_label)
+    # fig.savefig(save_path, dpi=100, bbox_inches='tight') 
+    # plt.show()
+
+    # ===== plot 1x3-macro plot ============= 
+    exp_label = "3b"
+    save_path = rf'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\synth_macro_{exp_label}.png'
+    macro_pkl = rf'calibration_result/macro_fcd_onramp_{exp_label}.pkl'
+    with open(macro_pkl, 'rb') as file:
+        macro_data = pickle.load(file, encoding='latin1')
+    fig, ax = macro.plot_macro_sim(macro_data, dx=10, dt=10)
+    fig.savefig(save_path, dpi=100, bbox_inches='tight') 
+    plt.show()

@@ -9,6 +9,8 @@ from matplotlib.ticker import FuncFormatter, MultipleLocator
 import datetime
 from scipy.interpolate import interp1d
 from multiprocessing import Pool
+import time
+import os
 
 def compute_macro(trajectory_file, dx, dt, start_time, end_time, start_pos, end_pos, save=False, plot=True):
     """
@@ -168,10 +170,6 @@ def compute_macro_generalized(trajectory_file, dx, dt, start_time, end_time, sta
          }
     """
     # find the spatial and temporal ranges
-    start_x = 999999
-    end_x = -9999999
-    t1 = 999999
-    t2 = -999999
     new_timestep = 0.1
 
     # initialize
@@ -388,7 +386,7 @@ def compute_macro_parallel(trajectory_file, dx, dt, start_time, end_time, start_
 
 
 
-def gen_VT(macro_data, t0, x0):
+def gen_VT(v_matrix, t0, x0, dx=10, dt=10):
     """
     Generalize virtual trajectory from macroscopic speed field
     Credit to Junyi Ji, a different implementation
@@ -396,16 +394,16 @@ def gen_VT(macro_data, t0, x0):
     Parameters:
     ----------
     
-    macro_data : dict
-        macro_data = {
-            "speed": np.array(),
-            "flow": np.array(),
-            "density": np.array(),
-         }
+    v_matrix : np.array()
+        speed in mph 
     t0 : float
         initial time in second
     x0 : float
         starting position in meter
+    dx : float
+        spatial discretization of macro_data in meter
+    dt : float
+        temporal discretization of macro_data in sec
 
     Returns: t_arr, x_arr
     t_arr: np.array
@@ -415,34 +413,42 @@ def gen_VT(macro_data, t0, x0):
     """
 
     # initialize
-    dt = 10 # sec, discretization of the speed array
-    dx = 10 # meter
     t_arr = [t0] # store states
     x_arr = [x0]
     t = t0 # keep track of current state
     x = x0
-    num_time_steps, num_space_points = macro_data["speed"].shape
+    num_time_steps, num_space_points = v_matrix.shape
     t_total = dt*num_time_steps
     x_total = dx*num_space_points
+    time_idx = int(t//dt)
+    space_idx = int(x//dx)
 
     while x<x_total and t<t_total:
-        # find the start time and space indices
-        time_idx = int(t//dt)
-        space_idx = int(x//dx)
-
-        v = macro_data["speed"][time_idx][space_idx]
-        rem_time = dt - (t % dt) # remaining time in the current grid
-        rem_space = dx - (x % dx)
+        # time.sleep(0.5)
+        # print(time_idx, space_idx, t,x)
+        v = v_matrix[time_idx][space_idx] #33.7
+        rem_time = round(dt - (t % dt), 3) # remaining time in the current grid
+        rem_space = round(dx - (x % dx), 3)
+        if rem_time < 1e-3: rem_time = dt # for numerical issue
+        if rem_space < 1e-3: rem_space = dx
+        
         time_to_reach_next_space = rem_space / v
+        # print("* ",rem_time, rem_space)
 
         if time_to_reach_next_space <= rem_time:
             # If the VT will hit the spatial boundary first
+            space_idx += 1
             t += time_to_reach_next_space
-            x += rem_space
+            # x += rem_space
+            x = space_idx * dx
+            
         else:
             # If the VT will hit the temporal boundary first
+            time_idx += 1
             x += v * rem_time
-            t += rem_time
+            # t += rem_time
+            t = time_idx * dt
+            
         t_arr.append(t)
         x_arr.append(x)
 
@@ -507,21 +513,14 @@ def plot_macro_sim(macro_data, dx=10, dt=10):
     yc = dx
     for ax in axs:
         ax.invert_yaxis()
-        # xticks = ax.get_xticks()
-        # ax.set_xticks(xticks)
-        # ax.set_xticklabels(["{:.1f}".format(5 + tick * xc /60) for tick in xticks])
         ax.xaxis.set_major_formatter(FuncFormatter(time_formatter))
-        # ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-        # ax.xaxis.set_major_formatter(FuncFormatter(time_formatter))
         yticks = ax.get_yticks()
-        # ax.set_yticks(yticks)
         ax.set_yticklabels([str(int(tick * yc)) for tick in yticks])
-        # ax.set_yticklabels([str(int(tick * yc/ 1609.34)) for tick in yticks])
         ax.set_ylabel("Position (m)")
         ax.set_xlabel("Time (min)")
         
     plt.tight_layout()
-    plt.show()
+    return fig, axs
 
 
 
@@ -569,13 +568,6 @@ def plot_macro(macro_data, dx=10, dt=10, hours=3):
     colorbar = fig.colorbar(h, ax=axs[2])
     axs[2].set_title("Speed (mph)")
 
-    # def time_formatter(x, pos):
-    #     # Calculate the time delta in minutes
-    #     minutes = 5*60 + x * xc # starts at 5am
-    #     # Convert minutes to hours and minutes
-    #     time_delta = datetime.timedelta(minutes=minutes)
-    #     # Convert time delta to string in HH:MM format
-    #     return str(time_delta)[:-3]  # Remove seconds part
     def time_formatter(x, pos):
         # Calculate the time delta in seconds
         seconds = 5 * 3600 + x * xc * 60  # Starts at 5:00 AM
@@ -589,9 +581,6 @@ def plot_macro(macro_data, dx=10, dt=10, hours=3):
     yc = dx
     for ax in axs:
         ax.invert_yaxis()
-        # xticks = ax.get_xticks()
-        # ax.set_xticks(xticks)
-        # ax.set_xticklabels(["{:.1f}".format(5 + tick * xc /60) for tick in xticks])
         ax.xaxis.set_major_formatter(FuncFormatter(time_formatter))
         ax.xaxis.set_major_locator(MultipleLocator(60 / xc))
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
@@ -604,6 +593,61 @@ def plot_macro(macro_data, dx=10, dt=10, hours=3):
         
     plt.tight_layout()
     plt.show()
+
+
+
+
+
+
+
+def calc_tot_time_spent(rho_matrix, dx=0.1, dt=30):
+    """
+    Integrate density map to get total time spent
+
+    Parameters:
+    rho_matrix : np.array
+        in veh / mile / lane
+    dx : in mile
+    dt : in sec
+
+    Return: tot_time_spent, float
+        Unit: veh x time (sec)
+    """
+    return np.sum(rho_matrix) * dx * dt
+
+def calc_travel_time(v_matrix, dx=160.934, dt=30):
+    """
+    Calculate lane-avg. travel time given varying departure time
+
+    Parameters:
+    v_matrix : np.array [N_time x N_space]
+        in m/s
+    dx : in mile
+    dt : in sec
+
+    Return: tot_time_spent, float
+        Unit: veh x time (sec)
+    """
+    
+    hours = 5
+    departure_time_arr = np.linspace(0, hours*3600, 5*60) # generate a VT every 5min
+    # departure_time_arr = [5250]
+    departure_time = []
+    travel_time = [] # travel time corresponding to each departure time
+    for t0 in departure_time_arr:
+        t_arr, x_arr = gen_VT(v_matrix, t0, x0=0, dx=dx, dt=dt)
+        if x_arr[-1]-x_arr[0] >= 5632:
+            travel_time.append(t_arr[-1]-t_arr[0])
+            departure_time.append(t0)
+        # plt.plot(t_arr, x_arr, "x-")
+        # plt.xlabel("Time (sec)")
+        # plt.ylabel("Space (m)")
+        # plt.show()
+
+
+    return departure_time, travel_time
+
+
 
 def compare_macro(macro_data_1, macro_data_2):
     '''
@@ -794,17 +838,6 @@ def plot_detector_data(xml_file, idm_param, initial_val=None):
     plt.tight_layout()
     plt.show()
 
-
-
-    # plt.figure(figsize=(10, 6))
-    # for id_value, values in data.items():
-    #     plt.scatter(values['occupancy'], values['flow'], label=id_value)
-
-    # plt.xlabel('Occupancy (% of the time a vehicle was at the detector)')
-    # plt.ylabel('Flow (#vehicles/hour)')
-    # plt.title('Detector Data')
-    # plt.legend()
-    # plt.show()
 
 if __name__ == "__main__":
     print("not implemented")

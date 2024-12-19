@@ -15,13 +15,14 @@ from datetime import datetime
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')) # two levels up
 sys.path.insert(0, main_path)
 import utils_data_read as reader
-import macro
+import utils_macro as macro
 import utils_vis as vis
 
 
 # ================ on-ramp scenario setup ====================
 SCENARIO = "onramp"
-EXP = "3c"
+EXP = "1c"
+N_TRIALS = 10000
 SUMO_DIR = os.path.dirname(os.path.abspath(__file__)) # current script directory
 
 with open('../config.json', 'r') as config_file:
@@ -59,13 +60,6 @@ measurement_locations = ['upstream_0', 'upstream_1',
                             'downstream_0', 'downstream_1']
 
 
-# ================ Configure the logging module ====================
-current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-log_dir = '_log'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}.txt')
-logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
 
 
@@ -271,12 +265,12 @@ def objective(trial):
                                         file_dir = temp_path)
     
     # RMSE
-    # diff = simulated_output[MEAS] - measured_output[MEAS] # measured output may have nans
-    # error = np.sqrt(np.nanmean(diff.flatten()**2))
+    diff = simulated_output[MEAS] - measured_output[MEAS] # measured output may have nans
+    error = np.sqrt(np.nanmean(diff.flatten()**2))
     # RMSPE
-    relative_diff = (simulated_output[MEAS] - np.nan_to_num(measured_output[MEAS], nan=0)) \
-                 / np.nan_to_num(measured_output[MEAS], nan=1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
-    error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
+    # relative_diff = (simulated_output[MEAS] - np.nan_to_num(measured_output[MEAS], nan=0)) \
+    #              / np.nan_to_num(measured_output[MEAS], nan=1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
+    # error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
 
     clear_directory(os.path.join("temp", str(trial.number)))
     logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
@@ -312,6 +306,14 @@ def clear_directory(directory_path):
 
 
 if __name__ == "__main__":
+    # ================ Configure the logging module ====================
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    log_dir = '_log'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}.txt')
+    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
+
 
     # ================================= initialize calibration: reset default parameters 
     default_params =  { "maxSpeed": 55.5, "minGap": 2.5, "accel": 2.6, "decel": 4.5, "tau": 1.0, "lcStrategic": 1.0, "lcCooperative": 1.0,"lcAssertive": 1, "lcSpeedGain": 1.0, "lcKeepRight": 1.0, "lcOvertakeRight": 0}
@@ -327,7 +329,7 @@ if __name__ == "__main__":
     sampler = optuna.samplers.TPESampler(seed=10)
     pruner = optuna.pruners.SuccessiveHalvingPruner()
     study = optuna.create_study(direction='minimize', sampler=sampler)
-    study.optimize(objective, n_trials=100, n_jobs=16, callbacks=[logging_callback])
+    study.optimize(objective, n_trials=N_TRIALS, n_jobs=os.cpu_count()-1, callbacks=[logging_callback])
     try:
         fig = optuna.visualization.plot_optimization_history(study)
         fig.show()
