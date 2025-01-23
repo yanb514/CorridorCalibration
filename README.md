@@ -78,7 +78,12 @@ The detailed descriptions of these methods are documented inline. To highlight a
 - `utils_vis.visualize_fcd()` plots the time-space diagram given the fcd file.
 - `utils_vis.plot_line_detectors()` plot the aggregated traffic data generated from SUMO at the specified detector locations.
 
-
+### Using calibrated SUMO
+All calibrated scenarios are located in `sumo/SCENARIO/calibrated`, which contains all the necessary files to run SUMO. You can run `SCENARIO.sumocfg` directly using SUMO-gui, or using command line 
+```bash
+cd sumo/SCENARIO/calibrated
+sumo -c SCENARIO.sumocfg
+```
 
 ---
 
@@ -91,10 +96,9 @@ This project is licensed under the [MIT License](LICENSE).
 - The work can be cited as:
 ```
 @misc{wang2024calibrating,
-  title={Calibrating microscopic traffic models with macroscopic data},
-  author={Wang, Yanbing and de Souza, Felipe and Karbowski, Dominik},
-  journal={https://arxiv.org/abs/2409.19090},
-  number={2409.19090},
+  title={Calibrating Microscopic Traffic Models with Macroscopic Data},
+  author={Wang, Yanbing and de Souza, Felipe and Zhang, Yaozhong and Karbowski, Dominik},
+  note={https://ssrn.com/abstract=5065262},
   year={2024}
 }
 ```
