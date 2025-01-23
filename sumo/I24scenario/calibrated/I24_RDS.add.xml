@@ -1,0 +1,43 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <!-- 56.7 (onramp) -->
+    <e1Detector id="56.7_0" lane="E1_5" pos="20" freq="300" file="det_56_7_0.out.xml" />
+    <e1Detector id="56.7_1" lane="E1_4" pos="20" freq="300" file="det_56_7_1.out.xml" />
+    <e1Detector id="56.7_2" lane="E1_3" pos="20" freq="300" file="det_56_7_2.out.xml" />
+    <e1Detector id="56.7_3" lane="E1_2" pos="20" freq="300" file="det_56_7_3.out.xml" />
+    <e1Detector id="56.7_4" lane="E1_1" pos="20" freq="300" file="det_56_7_4.out.xml" />
+
+    <!-- 56.3 5 lanes, no.5 is auxiliary, near off ramp -->
+    <e1Detector id="56.3_0" lane="E3_4" pos="846" freq="300" file="det_56_3_0.out.xml" />
+    <e1Detector id="56.3_1" lane="E3_3" pos="846" freq="300" file="det_56_3_1.out.xml" />
+    <e1Detector id="56.3_2" lane="E3_2" pos="846" freq="300" file="det_56_3_2.out.xml" />
+    <e1Detector id="56.3_3" lane="E3_1" pos="846" freq="300" file="det_56_3_3.out.xml" />
+    <e1Detector id="56.3_4" lane="E3_0" pos="846" freq="300" file="det_56_3_4.out.xml" />
+
+    <!-- 56.0 haywood on-ramp 5 lanes -->
+    <e1Detector id="56.0_0" lane="E3_4" pos="1329" freq="300" file="det_56_0_0.out.xml" />
+    <e1Detector id="56.0_1" lane="E3_3" pos="1329" freq="300" file="det_56_0_1.out.xml" />
+    <e1Detector id="56.0_2" lane="E3_2" pos="1329" freq="300" file="det_56_0_2.out.xml" />
+    <e1Detector id="56.0_3" lane="E3_1" pos="1329" freq="300" file="det_56_0_3.out.xml" />
+    <e1Detector id="56.0_4" lane="E3_0" pos="1329" freq="300" file="det_56_0_4.out.xml" />
+
+    <!-- 55.3 RDS: 4lanes  -->
+    <e1Detector id="55.3_0" lane="E8_3" pos="130" freq="300" file="det_55_3_0.out.xml" />
+    <e1Detector id="55.3_1" lane="E8_2" pos="130" freq="300" file="det_55_3_1.out.xml" />
+    <e1Detector id="55.3_2" lane="E8_1" pos="130" freq="300" file="det_55_3_2.out.xml" />
+    <e1Detector id="55.3_3" lane="E8_0" pos="130" freq="300" file="det_55_3_3.out.xml" />
+
+    <!-- 54.6 RDS: 4lanes  -->
+    <e1Detector id="54.6_0" lane="E8_3" pos="1080" freq="300" file="det_54_6_0.out.xml" />
+    <e1Detector id="54.6_1" lane="E8_2" pos="1080" freq="300" file="det_54_6_1.out.xml" />
+    <e1Detector id="54.6_2" lane="E8_1" pos="1080" freq="300" file="det_54_6_2.out.xml" />
+    <e1Detector id="54.6_3" lane="E8_0" pos="1080" freq="300" file="det_54_6_3.out.xml" />
+
+    <!-- 54.1 RDS: 4lanes  far downstream of bottleneck, not helpful -->
+    <!-- <e1Detector id="54.1_0" lane="E8_3" pos="1800" freq="300" file="det_54_1_0.out.xml" />
+    <e1Detector id="54.1_1" lane="E8_2" pos="1800" freq="300" file="det_54_1_1.out.xml" />
+    <e1Detector id="54.1_2" lane="E8_1" pos="1800" freq="300" file="det_54_1_2.out.xml" />
+    <e1Detector id="54.1_3" lane="E8_0" pos="1800" freq="300" file="det_54_1_3.out.xml" /> -->
+
+    <!-- <e1Detector id="downstream_0" lane="E4_0" pos="50" freq="50" file="det_trial_downstream_0.out.xml" />
+    <e1Detector id="downstream_1" lane="E4_1" pos="50" freq="50" file="det_trial_downstream_1.out.xml" />  -->
+</additional>
