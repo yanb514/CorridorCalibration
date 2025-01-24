@@ -79,6 +79,7 @@ The detailed descriptions of these methods are documented inline. To highlight a
 - `utils_vis.plot_line_detectors()` plot the aggregated traffic data generated from SUMO at the specified detector locations.
 
 ### Using calibrated SUMO
+If you only want to work with the calibrated SUMO scenarios without the calibration, you are in good hands!
 All calibrated scenarios are located in `sumo/SCENARIO/calibrated`, which contains all the necessary files to run SUMO. You can run `SCENARIO.sumocfg` directly using SUMO-gui, or using command line 
 ```bash
 cd sumo/SCENARIO/calibrated
