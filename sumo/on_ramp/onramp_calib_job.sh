@@ -19,12 +19,13 @@ module load mamba/latest
 module load sumo-1.19.0-gcc-12.1.0
 
 # Activate environment with NUMA awareness
-source activate sumo-env
+# source activate sumo-env
+source activate mypytorch-1.8.2
 
 # Set SUMO_HOME environment variable
-export SUMO_HOME=/packages/apps/spack/21/opt/spack/linux-rocky8-zen3/gcc-12.1.0/sumo-1.19.0-hkbmitts4svgguaerh3osctddszoeu4m
+# export SUMO_HOME=/packages/apps/spack/21/opt/spack/linux-rocky8-zen3/gcc-12.1.0/sumo-1.19.0-hkbmitts4svgguaerh3osctddszoeu4m
 
 # Run with explicit core binding
 echo "Starting job at $(date)"
-python onramp_calibrate.py 
+python onramp_cGAN.py 
 echo "Job completed at $(date)"

@@ -24,6 +24,7 @@ import json
 import random
 import multiprocessing
 from functools import partial
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')) # two levels up
 sys.path.insert(0, main_path)
@@ -34,17 +35,16 @@ from onramp_calibrate import clear_directory
 
 # ================ Configuration ====================
 SCENARIO = "onramp"
-N_TRIALS = 10000
-SUMO_DIR = os.path.dirname(os.path.abspath(__file__))  # Current script directory
 FLOW_STD = 5
 with open('../config.json', 'r') as config_file:
     config = json.load(config_file)
 measurement_locations = ['upstream_0', 'upstream_1', 'merge_0', 'merge_1', 'merge_2', 'downstream_0', 'downstream_1']
 
 # Define parameter ranges for calibration
-param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau']
-min_val = [30.0, 1.0, 1.0, 1.0, 0.5]
-max_val = [35.0, 3.0, 4.0, 3.0, 2.0]
+
+param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau', 'lcStrategic', 'lcCooperative', 'lcAssertive', 'lcSpeedGain', 'lcKeepRight']
+min_val = [30.0, 1.0, 1.0, 1.0, 0.5, 0, 0, 0.0001, 0, 0]  
+max_val = [35.0, 3.0, 4.0, 3.0, 2.0, 5, 1, 5,      5, 5] 
 
 # ================ Discriminator Model ====================
 
@@ -73,7 +73,7 @@ def simulate_real_worker(i, measurement_locations):
     return traffic, demand
 
 
-def generate_real_data(num_samples):
+def generate_real_data(num_samples, suffix):
     """
     Generate real traffic data samples using SUMO in parallel.
     """
@@ -98,8 +98,8 @@ def generate_real_data(num_samples):
     clear_directory("temp")
 
     # Save both traffic_patterns_tensor and demand_tensor to "/data/SCENARIO/sim"
-    save_traffic_path = os.path.abspath(f"../../data/{SCENARIO}/real/traffic_patterns.pt")
-    save_demand_path = os.path.abspath(f"../../data/{SCENARIO}/real/demand.pt")
+    save_traffic_path = os.path.abspath(f"../../data/{SCENARIO}/real/traffic_patterns_{suffix}.pt")
+    save_demand_path = os.path.abspath(f"../../data/{SCENARIO}/real/demand_{suffix}.pt")
     
     os.makedirs(os.path.dirname(save_traffic_path), exist_ok=True)
     os.makedirs(os.path.dirname(save_demand_path), exist_ok=True)
@@ -148,7 +148,7 @@ def simulate_sim_worker(i, measurement_locations):
 
     return traffic, demand
 
-def generate_sim_data(num_samples):
+def generate_sim_data(num_samples, suffix):
     """
     Generate real traffic data samples using SUMO in parallel.
     """
@@ -178,8 +178,8 @@ def generate_sim_data(num_samples):
     clear_directory("temp")
 
     # Save both traffic_patterns_tensor and demand_tensor to "/data/SCENARIO/sim"
-    save_traffic_path = os.path.abspath(f"../../data/{SCENARIO}/sim/traffic_patterns.pt")
-    save_demand_path = os.path.abspath(f"../../data/{SCENARIO}/sim/demand.pt")
+    save_traffic_path = os.path.abspath(f"../../data/{SCENARIO}/sim/traffic_patterns_{suffix}.pt")
+    save_demand_path = os.path.abspath(f"../../data/{SCENARIO}/sim/demand_{suffix}.pt")
     
     print(f"Saving to: {save_traffic_path} and {save_demand_path}")
     os.makedirs(os.path.dirname(save_traffic_path), exist_ok=True)
@@ -253,7 +253,10 @@ def extract_od_matrix(temp_path):
     Returns:
         od_matrix (np.ndarray): A 2D array of shape (routes × time).
     """
-    rou_file_path = glob.glob(os.path.join(temp_path, "*.rou.xml"))[0]
+    if temp_path.endswith(".rou.xml"):
+        rou_file_path = temp_path
+    else:
+        rou_file_path = glob.glob(os.path.join(temp_path, "*.rou.xml"))[0]
     tree = ET.parse(rou_file_path)
     root = tree.getroot()
     
@@ -278,50 +281,6 @@ def extract_od_matrix(temp_path):
     
     return demand_matrix
 
-# ================ Objective Function ====================
-def objective(trial):
-    """Objective function for optimization with cGAN."""
-    # Define the parameters to be optimized
-    driver_param = {
-        param_name: trial.suggest_uniform(param_name, min_val[i], max_val[i])
-        for i, param_name in enumerate(param_names)
-    } # TODO: add constraints using stability and RDC
-    
-    # Update SUMO configuration or route files with these parameters
-    temp_config_path, temp_path = create_temp_config(driver_param, trial.number)
-
-    # Run SUMO simulation
-    run_sumo(temp_config_path)
-    
-    # Extract simulated traffic patterns (flow, density, speed)
-    simulated_output = reader.extract_sim_meas(["trial_"+ location for location in measurement_locations],
-                                        file_dir = temp_path)
-    
-    # Extract time-varying OD matrix from the .rou file
-    od_matrix = extract_od_matrix(temp_path)
-    
-    # Reshape simulated output and OD matrix for the discriminator
-    traffic_pattern = np.stack([simulated_output['flow'], simulated_output['density'], simulated_output['speed']], axis=-1)
-    traffic_pattern = np.expand_dims(traffic_pattern, axis=0)  # Add batch dimension
-    traffic_pattern = torch.tensor(traffic_pattern, dtype=torch.float32)
-    
-    # od_matrix = np.expand_dims(od_matrix, axis=0)  # Add batch dimension
-    od_matrix = torch.tensor(od_matrix, dtype=torch.float32)
-    
-    # Evaluate realism using the discriminator
-    realism_score = discriminator(traffic_pattern, od_matrix).item()
-    
-    # Adversarial loss: encourage the discriminator to classify the simulated pattern as real
-    adversarial_loss = -torch.log(torch.tensor(realism_score))
-    
-    # Train the discriminator with real and simulated data
-    train_discriminator(discriminator, real_traffic_patterns, real_od_matrices, traffic_pattern, od_matrix)
-    
-    # Clear temporary files
-    clear_directory(os.path.join("temp", str(trial.number)))
-    
-    return adversarial_loss.item()
-
 
 class Discriminator(nn.Module):
     def __init__(self, traffic_shape, od_shape):
@@ -334,63 +293,73 @@ class Discriminator(nn.Module):
         self.traffic_conv = nn.Sequential(
             nn.Conv3d(in_channels=self.features, out_channels=32, kernel_size=(3, 3, 3), padding=1),
             nn.LeakyReLU(0.2),
-            nn.MaxPool3d(kernel_size=(2, 2, 1)),
+            nn.MaxPool3d(kernel_size=(2, 2, 1)),  # Reduces space and time dimensions
             nn.Conv3d(in_channels=32, out_channels=64, kernel_size=(3, 3, 3), padding=1),
             nn.LeakyReLU(0.2),
             nn.Flatten()
         )
 
-        # Use actual output size after convolution and pooling for traffic features
-        # self.traffic_output_size = 64 * (self.space // 2) * (self.time // 1)  # incorrect
-        self.traffic_output_size = 1024  # Since the shape of traffic_features is [20, 960]
+        # Correct traffic_output_size calculation
+        self.traffic_output_size = 64 * (self.space // 2) * (self.time // 2) * 1  # 64 * 3 * 5 * 1 = 960
 
         # ==================== OD Matrix Branch ====================
         self.od_conv = nn.Sequential(
-            nn.Conv1d(in_channels=self.routes, out_channels=32, kernel_size=3, padding=1),
+            nn.utils.spectral_norm((nn.Conv1d(in_channels=self.routes, out_channels=32, kernel_size=3, padding=1))),
             nn.LeakyReLU(0.2),
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+            nn.utils.spectral_norm((nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1))),
             nn.LeakyReLU(0.2),
             nn.Flatten()
         )
 
-        self.od_output_size = 64 * (self.time_intervals // 2)
+        # Correct od_output_size (no pooling applied)
+        self.od_output_size = 64 * self.time_intervals  # 64 * 1 = 64
 
         # ==================== Fully Connected Layers ====================
-        # Adjust input size based on actual combined size
         self.fc = nn.Sequential(
-            nn.Linear(self.traffic_output_size + self.od_output_size, 128),
+            nn.Linear(self.traffic_output_size + self.od_output_size, 128),  # 960 + 64 = 1024
             nn.LeakyReLU(0.2),
-            nn.Linear(128, 1),
-            nn.Sigmoid()
+            # nn.BatchNorm1d(128),  # Normalize activations
+            nn.Linear(128, 1)
+            # nn.Sigmoid()
         )
 
     def forward(self, traffic_pattern, od_matrix):
-        # ==================== Traffic Pattern Branch ====================
-        traffic_pattern = traffic_pattern.permute(0, 3, 1, 2).unsqueeze(-1)  # Add dummy depth dimension
+        traffic_pattern = traffic_pattern.permute(0, 3, 1, 2).unsqueeze(-1)
+        # print("Traffic input:", traffic_pattern.shape)
         traffic_features = self.traffic_conv(traffic_pattern)
+        # print("Traffic features:", traffic_features.shape)
         
-        # ==================== OD Matrix Branch ====================
-        od_matrix = od_matrix.permute(0, 1, 2)
+        # print("OD input:", od_matrix.shape)
         od_features = self.od_conv(od_matrix)
-
-        # ==================== Combine Branches ====================
+        # print("OD features:", od_features.shape)
+        
         combined = torch.cat([traffic_features, od_features], dim=1)
-
-        # ==================== Final Output ====================
         output = self.fc(combined)
         return output
 
 
 # ================ Discriminator Training Function ====================
-def train_discriminator(discriminator, real_traffic_patterns, real_od_matrices, simulated_traffic_patterns, simulated_od_matrices):
+def train_discriminator(discriminator, real_traffic_patterns, real_od_matrices, simulated_traffic_patterns, simulated_od_matrices, 
+                        num_epochs=100, batch_size=16, log_file="training_log.txt"):
     """
     Train the discriminator on real and simulated traffic patterns.
-    traffic_patterns:(sample_size, time, space, features). 3 features (flow, density, speed), 
+    
+    Args:
+    - discriminator (nn.Module): The discriminator model.
+    - real_traffic_patterns (Tensor): Real traffic patterns, shape (sample_size, time, space, features).
+    - real_od_matrices (Tensor): Real OD matrices, shape (sample_size, routes, time_intervals).
+    - simulated_traffic_patterns (Tensor): Simulated traffic patterns, shape (sample_size, time, space, features).
+    - simulated_od_matrices (Tensor): Simulated OD matrices, shape (sample_size, routes, time_intervals).
+    - num_epochs (int): Number of epochs for training.
+    - batch_size (int): Batch size for training.
+    - log_file (str): Path to the file where the training log will be saved.
     """
+    
     # Combine real and simulated data
     X_traffic = torch.cat([real_traffic_patterns, simulated_traffic_patterns], dim=0)
     X_od = torch.cat([real_od_matrices, simulated_od_matrices], dim=0)
     y = torch.cat([torch.ones(len(real_traffic_patterns)), torch.zeros(len(simulated_traffic_patterns))], dim=0)
+    y = y.unsqueeze(1)  # Shape: (16,) -> (16, 1)
     
     # Shuffle the data
     indices = torch.randperm(len(X_traffic))
@@ -398,16 +367,131 @@ def train_discriminator(discriminator, real_traffic_patterns, real_od_matrices, 
     X_od = X_od[indices]
     y = y[indices]
     
-    # Define loss function and optimizer
-    criterion = nn.BCELoss()
-    optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
+    # Create a DataLoader for batching
+    dataset = torch.utils.data.TensorDataset(X_traffic, X_od, y)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
-    # Train the discriminator
-    optimizer.zero_grad()
-    outputs = discriminator(X_traffic, X_od)
-    loss = criterion(outputs, y)
-    loss.backward()
-    optimizer.step()
+    # Define loss function and optimizer
+    lr = 0.0002
+    betas = (0.5, 0.999)
+    # criterion = nn.BCELoss() # use with sigmoid in fully connected layer (fc)
+    criterion = nn.BCEWithLogitsLoss() # for stability
+    optimizer = optim.Adam(discriminator.parameters(), lr=lr, betas=betas)
+    
+    device = torch.device(device if torch.cuda.is_available() else 'cpu')
+
+    # Open the log file to save training progress
+    with open(log_file, 'w') as log:
+        log.write("Epoch, Step, Loss\n")  # Write headers to log file
+
+        # Training loop
+        for epoch in range(num_epochs):
+            discriminator.train()  # Set the model to training mode
+            running_loss = 0.0
+            
+            for i, (traffic_batch, od_batch, labels_batch) in enumerate(dataloader):
+                # Move data to the GPU if needed
+                traffic_batch = traffic_batch.to(device)
+                od_batch = od_batch.to(device)
+                labels_batch = labels_batch.to(device)
+                
+                # Zero the gradients
+                optimizer.zero_grad()
+                
+                # Forward pass
+                outputs = discriminator(traffic_batch, od_batch)
+                
+                # Calculate the loss
+                loss = criterion(outputs, labels_batch)
+                
+                # Backpropagation
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(discriminator.parameters(), max_norm=1.0) # gradient clipping
+                optimizer.step()
+                
+                running_loss += loss.item()
+            
+            # Print the average loss for the epoch
+            if epoch % 10 == 0:
+                print(f'Epoch [{epoch+1}/{num_epochs}], Average Loss: {running_loss / len(dataloader)}')
+                log.write(f'Epoch [{epoch+1}/{num_epochs}], Average Loss: {running_loss / len(dataloader)}\n')
+            
+            # Optionally save the model after each epoch
+            # torch.save(discriminator.state_dict(), f'discriminator_epoch_{epoch+1}.pth')
+
+    print("Training complete!")
+
+
+
+def evaluate_discriminator(discriminator, real_traffic_patterns, real_od_matrices, simulated_traffic_patterns, simulated_od_matrices, 
+                           batch_size=2, device="cuda" if torch.cuda.is_available() else "cpu"):
+    """
+    Evaluate the discriminator on testing data.
+
+    Args:
+        discriminator (nn.Module): Pretrained discriminator model.
+        test_loader (DataLoader): DataLoader for testing data.
+        device (str): Device to use for evaluation ("cuda" or "cpu").
+
+    Returns:
+        dict: Dictionary containing evaluation metrics.
+    """
+    # Combine real and simulated data
+    X_traffic = torch.cat([real_traffic_patterns, simulated_traffic_patterns], dim=0)
+    X_od = torch.cat([real_od_matrices, simulated_od_matrices], dim=0)
+    y = torch.cat([torch.ones(len(real_traffic_patterns)), torch.zeros(len(simulated_traffic_patterns))], dim=0)
+    y = y.unsqueeze(1)  # Shape: (16,) -> (16, 1)
+    
+    # Shuffle the data
+    indices = torch.randperm(len(X_traffic))
+    X_traffic = X_traffic[indices]
+    X_od = X_od[indices]
+    y = y[indices]
+    
+    # Create a DataLoader for batching
+    dataset = torch.utils.data.TensorDataset(X_traffic, X_od, y)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    discriminator.eval()  # Set the model to evaluation mode
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():  # Disable gradient computation
+        for traffic_patterns, od_matrices, labels in dataloader:
+            # Move data to the appropriate device
+            traffic_patterns = traffic_patterns.to(device)
+            od_matrices = od_matrices.to(device)
+            labels = labels.to(device)
+
+            # Get discriminator predictions
+            outputs = discriminator(traffic_patterns, od_matrices).squeeze()  # Shape: (batch_size,)
+            preds = torch.sigmoid(outputs)  # Apply sigmoid to get probabilities
+            print(preds)
+            # print(preds, labels)
+            preds = (outputs > 0.5).float()  # Convert probabilities to binary predictions (0 or 1)
+
+            # Store predictions and labels
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    # Compute evaluation metrics
+    # print(all_preds)
+    # print(all_labels)
+    accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds)
+    recall = recall_score(all_labels, all_preds)
+    f1 = f1_score(all_labels, all_preds)
+    roc_auc = roc_auc_score(all_labels, all_preds)
+
+    # Return results as a dictionary
+    results = {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "roc_auc": roc_auc
+    }
+    return results
 
 # ================ Main Script ====================
 if __name__ == "__main__":
@@ -420,30 +504,76 @@ if __name__ == "__main__":
     # logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
 
-    # Generate training data
+    # Generate training and testing data
     # clear_directory("temp")
-    # num_samples = 20
-    # generate_real_data(num_samples=num_samples)
-    # generate_sim_data(num_samples=num_samples)
+    # num_train_samples = 100
+    # num_test_samples = 50
+    # generate_real_data(num_samples=num_train_samples, suffix="train")
+    # generate_sim_data(num_samples=num_train_samples, suffix="train")
+    # generate_real_data(num_samples=num_test_samples, suffix="test")
+    # generate_sim_data(num_samples=num_test_samples, suffix="test")
 
-    # Load data for discriminator training
-    real_traffic_patterns = torch.load(f"../../data/{SCENARIO}/real/traffic_patterns.pt")
-    real_od_matrices = torch.load(f"../../data/{SCENARIO}/real/demand.pt")
-    sim_traffic_patterns = torch.load(f"../../data/{SCENARIO}/sim/traffic_patterns.pt")
-    sim_od_matrices = torch.load(f"../../data/{SCENARIO}/sim/demand.pt")
+    # # Load data for discriminator training
+    real_traffic_train = torch.load(f"../../data/{SCENARIO}/real/traffic_patterns_train.pt",weights_only=True)
+    real_od_train = torch.load(f"../../data/{SCENARIO}/real/demand_train.pt",weights_only=True)
+    sim_traffic_train = torch.load(f"../../data/{SCENARIO}/sim/traffic_patterns_train.pt",weights_only=True)
+    sim_od_train = torch.load(f"../../data/{SCENARIO}/sim/demand_train.pt",weights_only=True)
 
     # Initialize the discriminator
-    discriminator = Discriminator(real_traffic_patterns.shape, real_od_matrices.shape)
-    output = discriminator(real_traffic_patterns, real_od_matrices)
-    print(output.shape)
-    print(output)
+    discriminator = Discriminator(real_traffic_train.shape, real_od_train.shape)
 
-    # # Run optimization
-    # sampler = optuna.samplers.TPESampler(seed=10)
-    # study = optuna.create_study(direction='minimize', sampler=sampler)
-    # study.optimize(objective, n_trials=N_TRIALS, n_jobs=os.cpu_count()-1)
+    # Run optimization
+    train_discriminator(discriminator, real_traffic_train, real_od_train, sim_traffic_train, sim_od_train)
+    torch.save(discriminator.state_dict(), "discriminator.pth")
 
-    # # Save results
-    # print('Best parameters:', study.best_params)
+    # Load data for discriminator testing
+    real_traffic_test = torch.load(f"../../data/{SCENARIO}/real/traffic_patterns_test.pt",weights_only=True)
+    real_od_test = torch.load(f"../../data/{SCENARIO}/real/demand_test.pt",weights_only=True)
+    sim_traffic_test = torch.load(f"../../data/{SCENARIO}/sim/traffic_patterns_test.pt",weights_only=True)
+    sim_od_test = torch.load(f"../../data/{SCENARIO}/sim/demand_test.pt",weights_only=True)
 
-    
+    # Load the pretrained model
+    # discriminator = Discriminator(real_traffic_test.shape, real_od_test.shape)
+    # discriminator.load_state_dict(torch.load("discriminator.pth", weights_only=True))
+
+    # Start evaluation (Testing)
+    result = evaluate_discriminator(discriminator, real_traffic_test, real_od_test, sim_traffic_test, sim_od_test)
+    print(result)
+
+    # print(sim_traffic_test[0])
+
+    ## plot samples
+    # import matplotlib.pyplot as plt
+    # # Extract relevant dimensions
+    # sample_size, space, time, features = real_traffic_test.shape
+    # assert sim_traffic_test.shape == real_traffic_test.shape, "Real and Sim data must have the same shape"
+
+    # # Select the first feature
+    # real_traffic_feature = real_traffic_test[:, :, :, 2]  # Shape: (sample_size, space, time)
+    # sim_traffic_feature = sim_traffic_test[:, :, :, 2]  # Shape: (sample_size, space, time)
+
+    # # Create subplots for each space dimension
+    # fig, axes = plt.subplots(nrows=space, figsize=(10, 2 * space), sharex=True)
+
+    # if space == 1:
+    #     axes = [axes]  # Ensure axes is iterable when space = 1
+
+    # for i in range(space):
+    #     ax = axes[i]
+        
+    #     # Plot all real traffic samples in red
+    #     for j in range(sample_size):
+    #         ax.plot(real_traffic_feature[j, i, :], color="red", alpha=0.5, label="Real" if j == 0 else "")
+        
+    #     # Plot all simulated traffic samples in blue
+    #     for j in range(sample_size):
+    #         ax.plot(sim_traffic_feature[j, i, :], color="blue", alpha=0.5, label="Sim" if j == 0 else "")
+        
+    #     ax.set_title(measurement_locations[i])
+    #     ax.legend()
+
+    # plt.xlabel("Time")
+    # plt.suptitle("Traffic Patterns: Real vs. Simulated")
+    # plt.tight_layout()
+    # plt.savefig("traffic_comparison.png", dpi=300, bbox_inches="tight")
+    # # plt.show()
