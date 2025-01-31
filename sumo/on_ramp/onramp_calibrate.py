@@ -1,4 +1,3 @@
-import traci
 import optuna
 import subprocess
 import os
@@ -15,8 +14,9 @@ from datetime import datetime
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')) # two levels up
 sys.path.insert(0, main_path)
 import utils_data_read as reader
-import utils_macro as macro
-import utils_vis as vis
+optuna.logging.set_verbosity(optuna.logging.ERROR)
+# import utils_macro as macro
+# import utils_vis as vis
 
 
 # ================ on-ramp scenario setup ====================
@@ -28,12 +28,14 @@ SUMO_DIR = os.path.dirname(os.path.abspath(__file__)) # current script directory
 with open('../config.json', 'r') as config_file:
     config = json.load(config_file)
 
-computer_name = os.environ.get('COMPUTERNAME', 'Unknown')
+computer_name = os.environ.get('HOSTNAME', 'Unknown')
+
 if "CSI" in computer_name:
-    SUMO_EXE = config['SUMO_EXE']
-    
+    SUMO_EXE = config['SUMO_PATH']["CSI"]
 elif "VMS" in computer_name:
-    SUMO_EXE = config['SUMO_EXE_PATH']
+    SUMO_EXE = config['SUMO_PATH']["VMS"]
+else: # run on SOL
+    SUMO_EXE = config['SUMO_PATH']["SOL"]
 
 if "1" in EXP:
     param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau']
@@ -60,15 +62,11 @@ measurement_locations = ['upstream_0', 'upstream_1',
                             'downstream_0', 'downstream_1']
 
 
-
-
-
-
 def run_sumo(sim_config, tripinfo_output=None, fcd_output=None):
     """Run a SUMO simulation with the given configuration."""
     # command = ['sumo', '-c', sim_config, '--tripinfo-output', tripinfo_output, '--fcd-output', fcd_output]
 
-    command = [SUMO_EXE, '-c', sim_config]
+    command = [SUMO_EXE, '-c', sim_config, '--no-step-log',  '--xml-validation', 'never']
     if tripinfo_output is not None:
         command.extend(['--tripinfo-output', tripinfo_output])
         
@@ -91,72 +89,6 @@ def get_vehicle_ids_from_routes(route_file):
 
     return vehicle_ids
 
-
-
-
-
-def write_vehicle_trajectories_to_csv(readfilename, writefilename):
-    # Start SUMO simulation with TraCI
-    traci.start(["sumo", "-c", readfilename+".sumocfg"])
-    
-    # Replace "your_routes_file.rou.xml" with the actual path to your SUMO route file
-    route_file_path = readfilename+".rou.xml"
-    # Get a list of vehicle IDs from the route file
-    predefined_vehicle_ids = get_vehicle_ids_from_routes(route_file_path)
-
-    # Print the list of vehicle IDs
-    print("List of Predefined Vehicle IDs:", predefined_vehicle_ids)
-
-
-    # Open the CSV file for writing
-    with open(writefilename, 'w') as csv_file:
-        # Write header
-        # Column 1:	Vehicle ID
-        # Column 2:	Frame ID
-        # Column 3:	Lane ID
-        # Column 4:	LocalY
-        # Column 5:	Mean Speed
-        # Column 6:	Mean Acceleration
-        # Column 7:	Vehicle length
-        # Column 8:	Vehicle Class ID
-        # Column 9:	Follower ID
-        # Column 10: Leader ID
-
-        csv_file.write("VehicleID, Time, LaneID, LocalY, MeanSpeed, MeanAccel, VehLength, VehClass, FollowerID, LeaderID\n")
-        # vehicle_id = "carflow1.131"
-        # Run simulation steps
-        step = 0
-        while traci.simulation.getMinExpectedNumber() > 0:
-            # Get simulation time
-            simulation_time = traci.simulation.getTime()
-
-            # Get IDs of all vehicles
-            vehicle_ids = traci.vehicle.getIDList()
-
-            # Iterate over all vehicles
-            for vehicle_id in vehicle_ids:
-                # Get vehicle position and speed
-                position = traci.vehicle.getPosition(vehicle_id)
-                laneid = traci.vehicle.getLaneID(vehicle_id)
-                speed = traci.vehicle.getSpeed(vehicle_id)
-                accel = traci.vehicle.getAcceleration(vehicle_id)
-                cls = traci.vehicle.getVehicleClass(vehicle_id)
-
-                # Write data to the CSV file - similar to NGSIM schema
-                csv_file.write(f"{vehicle_id} {simulation_time} {laneid} {position[0]} {speed} {accel} {-1} {cls} {-1} {-1}\n")
-
-            # try to overwite acceleration of one vehicle
-            # if 300< step <400:
-            #     traci.vehicle.setSpeed(vehicle_id, 0)
-            # Simulate one step
-            traci.simulationStep()
-            step += 1
-
-    # Close connection
-    traci.close()
-    print("Complete!")
-
-    return
 
 
 
@@ -251,7 +183,7 @@ def objective(trial):
         param_name: trial.suggest_uniform(param_name, min_val[i], max_val[i])
         for i, param_name in enumerate(param_names)
     }
-    print(driver_param, trial.number)
+    # print(driver_param, trial.number)
     
     # Update SUMO configuration or route files with these parameters
     temp_config_path, temp_path = create_temp_config(driver_param, trial.number)
@@ -267,26 +199,21 @@ def objective(trial):
     # RMSE
     diff = simulated_output[MEAS] - measured_output[MEAS] # measured output may have nans
     error = np.sqrt(np.nanmean(diff.flatten()**2))
-    # RMSPE
-    # relative_diff = (simulated_output[MEAS] - np.nan_to_num(measured_output[MEAS], nan=0)) \
-    #              / np.nan_to_num(measured_output[MEAS], nan=1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
-    # error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
 
     clear_directory(os.path.join("temp", str(trial.number)))
-    logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
+    # logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
     
     return error
 
 
 def logging_callback(study, trial):
-    if trial.state == optuna.trial.TrialState.COMPLETE:
-        logging.info(f'Trial {trial.number} succeeded: value={trial.value}, params={trial.params}')
-    elif trial.state == optuna.trial.TrialState.FAIL:
+    # if trial.state == optuna.trial.TrialState.COMPLETE:
+    #     logging.info(f'Trial {trial.number} succeeded: value={trial.value}, params={trial.params}')
+    if trial.state == optuna.trial.TrialState.FAIL:
         logging.error(f'Trial {trial.number} failed: exception={trial.user_attrs.get("exception")}')
     
     if study.best_trial.number == trial.number:
-        logging.info(f'Current Best Trial: {study.best_trial.number}')
-        logging.info(f'Current Best Value: {study.best_value}')
+        logging.info(f'Current Best Trial: {study.best_trial.number}, best value: {study.best_value}')
         logging.info(f'Current Best Parameters: {study.best_params}')
 
 def clear_directory(directory_path):
@@ -298,7 +225,7 @@ def clear_directory(directory_path):
     """
     try:
         shutil.rmtree(directory_path)
-        print(f"Directory {directory_path} and all its contents have been removed.")
+        # print(f"Directory {directory_path} and all its contents have been removed.")
     except FileNotFoundError:
         print(f"Directory {directory_path} does not exist.")
     except Exception as e:

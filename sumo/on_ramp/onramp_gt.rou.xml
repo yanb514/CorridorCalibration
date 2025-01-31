@@ -9,6 +9,5 @@
     <flow id="mainlane" type="gt" begin="0" end="300" vehsPerHour="5000" route="mainlane" departLane="random" departSpeed="desired" />
     <flow id="ramp_0" type="gt" begin="0" end="300" vehsPerHour="1000" route="ramp" departLane="random" departSpeed="speedLimit" />
 
-    
 
 </routes>
