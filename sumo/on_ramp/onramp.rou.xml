@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <routes>
     
-	<vType id="trial" carFollowModel="IDM" maxSpeed="32.155468058027324" minGap="1.7304751150744706" accel="3.13277526615182" decel="2.2556560753351427" tau="1.376101486623159" lcStrategic="0.7670997584501396" lcCooperative="0.9983358594382765" lcAssertive="0.5716922651157786" lcSpeedGain="1.615401763830451" lcKeepRight="4.302565070438945" lcOvertakeRight="0" />
+	<vType id="trial" length="4.3" carFollowModel="IDM" maxSpeed="30.55" minGap="2.5" accel="1.5" decel="2" tau="1.4" emergencyDecel="4.0" laneChangeModel="SL2015" lcSublane="1.0" latAlignment="arbitrary" maxSpeedLat="1.4" lcAccelLat="0.7" minGapLat="0.4" lcStrategic="10.0" lcCooperative="1.0" lcPushy="0.4" lcImpatience="0.9" lcSpeedGain="1.5" lcKeepRight="0.0" lcOvertakeRight="0.0" />
 
     <route id="ramp" edges="ramp E2 E4" />
 	<route id="mainlane" edges="E0 E1 E2 E4 " />
 	
     <flow id="mainlane" type="trial" begin="0" end="300" vehsPerHour="5000" route="mainlane" departLane="random" departSpeed="desired" />
-    <flow id="ramp_0" type="trial" begin="0" end="300" vehsPerHour="1000" route="ramp" departLane="random" departSpeed="speedLimit" />
+    <flow id="ramp_0" type="trial" begin="0" end="300" vehsPerHour="1000" route="ramp" departLane="random" departSpeed="desired" />
 </routes>

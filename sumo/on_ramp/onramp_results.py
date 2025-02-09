@@ -31,7 +31,30 @@ best_param_map = {
     "3a": {'maxSpeed': 30.116481051532638, 'minGap': 2.9246837509525085, 'accel': 3.6138980697235565, 'decel': 2.999289823239752, 'tau': 1.8452201128675738, 'lcStrategic': 3.0487969842704445, 'lcCooperative': 0.5119595169145059, 'lcAssertive': 0.09087476505204747, 'lcSpeedGain': 0.48288326756878197, 'lcKeepRight': 1.2791339423376002},
     "3b":  {'maxSpeed': 31.15811238953671, 'minGap': 2.9296054625794694, 'accel': 1.8746961428409035, 'decel': 2.7579099400317237, 'tau': 1.195216410299756, 'lcStrategic': 0.7404221362409035, 'lcCooperative': 0.49611840700450593, 'lcAssertive': 0.08853824678040209, 'lcSpeedGain': 0.7633522724278734, 'lcKeepRight': 0.4078627936600342}, # new resu
     "3c": {'maxSpeed': 33.754985273472734, 'minGap': 1.9865826126204338, 'accel': 3.0466653512966855, 'decel': 2.8407628417205637, 'tau': 1.5194700473522247, 'lcStrategic': 0.7093501609745403, 'lcCooperative': 0.5958295428510783, 'lcAssertive': 0.4372298978360208, 'lcSpeedGain': 3.033059771569888, 'lcKeepRight': 3.4745560963764546},
-    "cgan": {'maxSpeed': 32.155468058027324, 'minGap': 1.7304751150744706, 'accel': 3.13277526615182, 'decel': 2.2556560753351427, 'tau': 1.376101486623159, 'lcStrategic': 0.7670997584501396, 'lcCooperative': 0.9983358594382765, 'lcAssertive': 0.5716922651157786, 'lcSpeedGain': 1.615401763830451, 'lcKeepRight': 4.302565070438945}
+    "cgan": {'maxSpeed': 32.155468058027324, 'minGap': 1.7304751150744706, 'accel': 3.13277526615182, 'decel': 2.2556560753351427, 'tau': 1.376101486623159, 'lcStrategic': 0.7670997584501396, 'lcCooperative': 0.9983358594382765, 'lcAssertive': 0.5716922651157786, 'lcSpeedGain': 1.615401763830451, 'lcKeepRight': 4.302565070438945},
+    "gt_sublane": {"carFollowModel": "IDM",
+        "maxSpeed": 30.55,
+        "minGap": 2.5,
+        "accel": 1.5,
+        "decel": 2,
+        "tau": 1.4,
+        "emergencyDecel": 4.0,
+        # "speedFactor": 0.8,
+        # "speedDev": 0.2,
+        "laneChangeModel": "SL2015",
+        "lcSublane": 1.0,
+        "latAlignment": "arbitrary",
+        "maxSpeedLat": 1.4,
+        "lcAccelLat": 0.7,
+        "minGapLat": 0.4,
+        "lcStrategic": 10.0,
+        "lcCooperative": 1.0,
+        "lcPushy": 0.4,          # Replaces lcAssertive in sublane model
+        "lcImpatience": 0.9,
+        "lcSpeedGain": 1.5,
+        "lcKeepRight": 0.0,
+        "lcOvertakeRight": 0.0
+    }
 }
 
 mainline=["E0_0", "E0_1", "E1_0", "E1_1", "E2_0", "E2_1", "E2_2", "E4_0", "E4_1"]
@@ -245,10 +268,10 @@ if __name__ == "__main__":
     # ============ plot line detectors =========================
     quantity = "speed" # speed, volume, occupancy
     # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\synth_detector_occ.png'
-    save_path = "synth_detector_gan.png"
+    save_path = "gt_detector.png"
     fig=None
     axes=None
-    for i,exp_label in enumerate(["gt", "cgan"]):
+    for i,exp_label in enumerate(["gt_sublane"]):
         onramp.update_sumo_configuration(best_param_map[exp_label])
         onramp.run_sumo(sim_config = "onramp.sumocfg")
         fig, axes = vis.plot_line_detectors_sim(sumo_dir, measurement_locations, quantity=quantity, fig=fig, axes=axes, label=exp_label)

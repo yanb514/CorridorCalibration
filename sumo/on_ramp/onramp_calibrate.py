@@ -66,7 +66,9 @@ def run_sumo(sim_config, tripinfo_output=None, fcd_output=None):
     """Run a SUMO simulation with the given configuration."""
     # command = ['sumo', '-c', sim_config, '--tripinfo-output', tripinfo_output, '--fcd-output', fcd_output]
 
-    command = [SUMO_EXE, '-c', sim_config, '--no-step-log',  '--xml-validation', 'never']
+    command = [SUMO_EXE, '-c', sim_config, 
+               '--no-step-log',  '--xml-validation', 'never', 
+               '--lateral-resolution', '0.5']
     if tripinfo_output is not None:
         command.extend(['--tripinfo-output', tripinfo_output])
         
@@ -91,33 +93,37 @@ def get_vehicle_ids_from_routes(route_file):
 
 
 
-
 def update_sumo_configuration(param):
     """
     Update the SUMO configuration file with the given parameters.
+    All parameters in .rou.xml not present in the given param will be removed
     
     Parameters:
-        param (dict): List of parameter values [maxSpeed, minGap, accel, decel, tau]
+        param (dict): Dictionary of parameter values {attribute_name: value}
     """
-    
     # Define the path to your rou.xml file
-    file_path = SCENARIO+'.rou.xml'
-
+    file_path = SCENARIO + '.rou.xml'
+    
     # Parse the XML file
     tree = ET.parse(file_path)
     root = tree.getroot()
-
+    
     # Find the vType element with id="trial"
     for vtype in root.findall('vType'):
         if vtype.get('id') == 'trial':
-            # Update the attributes with the provided parameters
+            # Remove all existing attributes
+            for attr in list(vtype.attrib.keys()):
+                if attr not in ["id", "length"]:
+                    del vtype.attrib[attr]
+            
+            # Set new attributes from param
             for key, val in param.items():
                 vtype.set(key, str(val))
             break
-
+    
     # Write the updated XML content back to the file
     tree.write(file_path, encoding='UTF-8', xml_declaration=True)
-    return
+
 
 def create_temp_config(param, trial_number):
     """
