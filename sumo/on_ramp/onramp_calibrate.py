@@ -21,7 +21,7 @@ optuna.logging.set_verbosity(optuna.logging.ERROR)
 
 # ================ on-ramp scenario setup ====================
 SCENARIO = "onramp"
-EXP = "1c"
+EXP = "3b"
 N_TRIALS = 10000
 SUMO_DIR = os.path.dirname(os.path.abspath(__file__)) # current script directory
 
@@ -41,14 +41,21 @@ if "1" in EXP:
     param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau']
     min_val = [30.0, 1.0, 1.0, 1.0, 0.5]  
     max_val = [35.0, 3.0, 4.0, 3.0, 2.0] 
+
+    # <vType id="trial" length="4.3" carFollowModel="IDM" maxSpeed="30.55" minGap="2.5" accel="1.5" decel="2" tau="1.4" emergencyDecel="4.0" laneChangeModel="SL2015" 
+    # lcSublane="1.0" latAlignment="arbitrary" maxSpeedLat="1.4" lcAccelLat="0.7" minGapLat="0.4" lcStrategic="10.0" lcCooperative="1.0" lcPushy="0.4" lcImpatience="0.9" lcSpeedGain="1.5" lcKeepRight="0.0" lcOvertakeRight="0.0" />
+
 elif "2" in EXP:
-    param_names = ['lcStrategic', 'lcCooperative', 'lcAssertive', 'lcSpeedGain', 'lcKeepRight']
-    min_val = [0, 0, 0.0001, 0, 0]  
-    max_val = [5, 1, 5,      5, 5] 
+    param_names = ['lcSublane', 'maxSpeedLat', 'lcAccelLat', 'minGapLat', 'lcStrategic', 
+                   'lcCooperative', 'lcPushy','lcImpatience','lcSpeedGain', ]
+    min_val = [0,  0,  0,  0, 0,  0, 0, -1, 0, 0, 0]  
+    max_val = [10, 10, 5,  5, 10, 1, 1, 1, 1, 1, 1] 
 elif "3" in EXP:
-    param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau', 'lcStrategic', 'lcCooperative', 'lcAssertive', 'lcSpeedGain', 'lcKeepRight']
-    min_val = [30.0, 1.0, 1.0, 1.0, 0.5, 0, 0, 0.0001, 0, 0]  
-    max_val = [35.0, 3.0, 4.0, 3.0, 2.0, 5, 1, 5,      5, 5] 
+    param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau', 
+                   'lcSublane', 'maxSpeedLat', 'lcAccelLat', 'minGapLat', 'lcStrategic', 
+                   'lcCooperative', 'lcPushy','lcImpatience','lcSpeedGain']
+    min_val = [30.0, 1.0, 1.0, 1.0, 0.5, 0,  0,  0,  0, 0,  0, 0, -1, 0]  
+    max_val = [35.0, 3.0, 4.0, 3.0, 2.0, 10, 10, 5,  5, 10, 1, 1, 1, 1] 
 if "a" in EXP:
     MEAS = "volume"
 elif "b" in EXP:
@@ -56,7 +63,27 @@ elif "b" in EXP:
 elif "c" in EXP:
     MEAS = "occupancy"
 
-
+DEFAULT_PARAMS = {
+    "maxSpeed": "30.55",
+    "minGap": "2.5",
+    "accel": "1.5",
+    "decel": "2",
+    "tau": "1.4",
+    "emergencyDecel": "4.0",
+    "laneChangeModel": "SL2015",
+    "lcSublane": "1.0",
+    "latAlignment": "arbitrary",
+    "maxSpeedLat": "1.4",
+    "lcAccelLat": "0.7",
+    "minGapLat": "0.4",
+    "lcStrategic": "10.0",
+    "lcCooperative": "1.0",
+    "lcPushy": "0.4",
+    "lcImpatience": "0.9",
+    "lcSpeedGain": "1.5",
+    "lcKeepRight": "0.0",
+    "lcOvertakeRight": "0.0"
+}
 measurement_locations = ['upstream_0', 'upstream_1', 
                             'merge_0', 'merge_1', 'merge_2', 
                             'downstream_0', 'downstream_1']
@@ -76,7 +103,6 @@ def run_sumo(sim_config, tripinfo_output=None, fcd_output=None):
         command.extend([ '--fcd-output', fcd_output])
         
     subprocess.run(command, check=True)
-
 
 
 
@@ -108,12 +134,13 @@ def update_sumo_configuration(param):
     tree = ET.parse(file_path)
     root = tree.getroot()
     
-    # Find the vType element with id="trial"
+    # Find the vType element with id="hdv"
     for vtype in root.findall('vType'):
-        if vtype.get('id') == 'trial':
+        if vtype.get('id') == 'hdv':
             # Remove all existing attributes
             for attr in list(vtype.attrib.keys()):
-                if attr not in ["id", "length"]:
+                # These params are not calibrated
+                if attr not in ["id", "length", "carFollowModel","emergencyDecel", "laneChangeModel", "latAlignment", "lcKeepRight", "lcOvertakeRight"]:
                     del vtype.attrib[attr]
             
             # Set new attributes from param
@@ -149,9 +176,9 @@ def create_temp_config(param, trial_number):
     rou_tree = ET.parse(original_rou_file_path)
     rou_root = rou_tree.getroot()
 
-    # Find the vType element with id="trial"
+    # Find the vType element with id="hdv"
     for vtype in rou_root.findall('vType'):
-        if vtype.get('id') == 'trial':
+        if vtype.get('id') == 'hdv':
             # Update the attributes with the provided parameters
             for key, val in param.items():
                 vtype.set(key, str(val))
@@ -247,15 +274,12 @@ if __name__ == "__main__":
     log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}.txt')
     logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
-
     # ================================= initialize calibration: reset default parameters 
-    default_params =  { "maxSpeed": 55.5, "minGap": 2.5, "accel": 2.6, "decel": 4.5, "tau": 1.0, "lcStrategic": 1.0, "lcCooperative": 1.0,"lcAssertive": 1, "lcSpeedGain": 1.0, "lcKeepRight": 1.0, "lcOvertakeRight": 0}
-    update_sumo_configuration(default_params)
+    update_sumo_configuration(DEFAULT_PARAMS)
 
     # ================================= run ground truth and generate synthetic measurements
     run_sumo(sim_config=SCENARIO+"_gt.sumocfg") #, fcd_output ="trajs_gt.xml")
     measured_output = reader.extract_sim_meas(measurement_locations)
-
 
     # =============================== Create a study object and optimize the objective function
     clear_directory("temp")

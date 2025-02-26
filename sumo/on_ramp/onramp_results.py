@@ -39,8 +39,6 @@ best_param_map = {
         "decel": 2,
         "tau": 1.4,
         "emergencyDecel": 4.0,
-        # "speedFactor": 0.8,
-        # "speedDev": 0.2,
         "laneChangeModel": "SL2015",
         "lcSublane": 1.0,
         "latAlignment": "arbitrary",
