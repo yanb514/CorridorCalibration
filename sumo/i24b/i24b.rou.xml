@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-02-28 11:27:01.261664 by findAllRoutes.py v1_22_0+0255-87c854e7851
+  options: -n processed_network.net.xml -o all_routes.rou.xml -s 19441652#0,1016548847,1016548860.217,108162303,683657786#1-AddedOnRampEdge,277208926,27828382,108162413#1.70,1070403831#1-AddedOnRampEdge,277208927#1-AddedOnRampEdge -t 1040737038,19442635,971686034,579664791,1192589176,1016548859,19440902,180933397,988591740#1,1141876515,634155175
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0"/>
+
+    <!-- 0: EB first downstream onramp to downstream -->
+    <route id="0" edges="683657786#1-AddedOnRampEdge 988591740#1-AddedOnRampEdge 988591740#1"/> 
+    <!-- 1: WB downstream onramp to downstream -->
+    <route id="1" edges="277208926 634155175-AddedOnRampEdge 634155175"/>
+    <!-- 2: WB upstream to the first offramp -->
+    <route id="2" edges="27828382 27828382-AddedOffRampEdge 180933397"/>
+    <!-- 3: WB second downstream onramp immediately offramp -->
+    <route id="3" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635"/>
+    <!-- 4: WB second downstream onramp immediately offramp, from the south onramp -->
+    <route id="4" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635"/>
+    <!-- 5: EB first upstream onramp immediately offramp -->
+    <route id="5" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570017 1141876515"/>
+    <!-- 6: EB first upstream onramp to the second offramp -->
+    <route id="6" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 1016548859"/>
+    <!-- 7: EB upstream immediately to the first offramp (side) -->
+    <route id="7" edges="108162303 977816372 977816372.143 19441728-AddedOffRampEdge 19441728-AddedOffRampEdge.29 1192589176"/>
+    <!-- 8: EB upstream immediately to the first offramp (main) -->
+    <route id="8" edges="108162303 977816372 977816372.143 19441728-AddedOffRampEdge 19441728-AddedOffRampEdge.29 579664791"/>
+    <!-- 9: WB second downstream onramp (north) to downstream -->
+    <route id="9" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
+    <!-- 10: WB second downstream onramp (south) to downstream -->
+    <route id="10" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
+    <!-- 11: WB third downstream onramp to the next offramp (main)-->
+    <route id="11" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038"/>
+    <!-- 12: WB third downstream onramp to the next offramp (side)-->
+    <route id="12" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902"/>
+    <!-- 13: WB third downstream onramp to the next next offramp -->
+    <route id="13" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 19442635"/>
+    <!-- 14: EB second upstream onramp (side) to the next offramp -->
+    <route id="14" edges="1016548860.217 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
+    <!-- 15: EB upstream to the second offramp -->
+    <route id="15" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570017 1141876515"/>
+    <!-- 16: EB upstream to the third offramp -->
+    <route id="16" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 1016548859"/>
+    <!-- 17: EB second upstream onramp (main) to the next offramp -->
+    <route id="17" edges="108162413#1.70 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
+    <!-- 18: EB second upstream onramp (side) to downstream -->
+    <route id="18" edges="1016548860.217 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
+    <!-- 19: WB upstream to the second offramp (main)-->
+    <route id="19" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038"/>
+    <!-- 20: WB upstream to the second offramp (side)-->
+    <route id="20" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902"/>
+    <!-- 21: WB upstream to the third offramp -->
+    <route id="21" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 19442635"/>
+    <!-- 22: EB second upstream onramp (main) to downstream -->
+    <route id="22" edges="108162413#1.70 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
+    <!-- 23: WB first upstream onramp to downstream -->
+    <route id="23" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
+    <!-- 24: EB first upstream onramp to the third offramp -->
+    <route id="24" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
+    <!-- 25: WB upstream to downstream-->
+    <route id="25" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
+    <!-- 26: EB first onramp to downstream -->
+    <route id="26" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
+    <!-- 27: EB upstream to the last offramp -->
+    <route id="27" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
+    <!-- 28: EB upstream to downstream -->
+    <route id="28" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
+
+  
+</routes>

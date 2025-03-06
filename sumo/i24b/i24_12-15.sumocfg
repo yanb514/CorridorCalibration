@@ -1,0 +1,11 @@
+<configuration>
+  <input>
+    <net-file value="i24_12-15.net.xml"/>
+    <route-files value="12-15_output_routes.xml,12-15_output_flows.xml"/>
+    <additional-files value="12-15_gps.xml,12-15_lanelocs.xml"/>
+  </input>
+  <time>
+    <begin value="22800"/>
+    <end value="23760"/>
+  </time>
+</configuration>
