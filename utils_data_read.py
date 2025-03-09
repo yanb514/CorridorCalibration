@@ -147,6 +147,66 @@ def rds_to_matrix(rds_file, det_locations ):
 
     return macro_data
 
+def rds_to_matrix_i24b(rds_file, det_locations ):
+    '''
+    rds_file is the ghost RDS data from I-24 MOTION, aggregated in 30 sec
+    Read RDS data from a CSV file and output a matrix of [N_dec, N_time] size,
+    where N_dec is the number of detectors and N_time is the number of aggregated
+    time intervals of 0.5 minutes.
+    
+    Parameters:
+    - rds_file: Path to the RDS data CSV file.
+    - det_locations: List of strings representing RDS sensor locations in the format "milemarker_lane", e.g., "555-eastbound_0".
+    
+    Returns:
+    - matrix: A numpy array of shape [N_dec, N_time].
+
+    SUMO lane is 0-indexed (from right), while RDS lanes are 1-index (from left)
+    '''
+    
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(rds_file, delimiter=';')
+    
+    # Convert 'Time' column to datetime (assuming 'Time' is in minutes)
+    df['Time'] = pd.to_datetime(df['Time'], unit='m')
+    
+    # Extract milemarker and lane from detector locations
+    milemarkers = [location.split('-')[0] for location in det_locations]
+    lanes = [int(location.split('_')[-1]) for location in det_locations]
+    
+    # Initialize macro_data
+    macro_data = {"speed": [], "flow": []}
+
+    for milemarker, lane in zip(milemarkers, lanes):
+        # Filter rows based on milemarker and lane
+        filtered_df = df[(df['Detector'].str.contains(f"{milemarker}-eastbound_{lane}"))]
+        
+        if filtered_df.empty:
+            print(f"No data for milemarker {milemarker} lane {lane}")
+            # Append NaN arrays if no data is found
+            macro_data["speed"].append(np.full((1, 20), np.nan))  # 20 time intervals (10 minutes * 2 intervals per minute)
+            macro_data["flow"].append(np.full((1, 20), np.nan))
+        else:
+            # Aggregate by 0.5-minute intervals
+            aggregated = filtered_df.groupby(pd.Grouper(key='Time', freq='30s')).agg({
+                'vPKW': 'mean',  # Speed
+                'qPKW': 'sum'     # Flow (vehicle count)
+            }).reset_index()
+
+            # Fill missing intervals with NaN
+            full_index = pd.date_range(start=df['Time'].min(), end=df['Time'].max(), freq='30s')
+            aggregated = aggregated.set_index('Time').reindex(full_index).reset_index()
+
+            macro_data["speed"].append(aggregated["vPKW"].values.reshape(1, -1))
+            macro_data["flow"].append(aggregated["qPKW"].values.reshape(1, -1) * 2)  # Convert to veh/hr (2 intervals per minute)
+
+    # Stack the lists into numpy arrays
+    macro_data["speed"] = np.vstack(macro_data["speed"])*0.3048  # from ft/s to m/s [N_dec, N_time]
+    macro_data["flow"] = np.vstack(macro_data["flow"]) * 120  # from veh/30s to veh/hr [N_dec, N_time]
+
+    return macro_data
+
+
 def extract_sim_meas(measurement_locations, file_dir = ""):
     """
     Extract simulated traffic measurements (Q, V, Occ) from SUMO detector output files (xxx.out.xml).
@@ -194,6 +254,64 @@ def extract_sim_meas(measurement_locations, file_dir = ""):
     detector_data["flow"]=detector_data["volume"]
     detector_data["density"]=detector_data["flow"]/detector_data["speed"]
     return detector_data
+
+def extract_sim_meas_i24b(det_locations, xml_file):
+    """
+    Formats the detector output XML file into 2D matrices for flow and speed.
+
+    Parameters:
+    - xml_file: Path to the detector output XML file (e.g., out.xml).
+    - det_locations: List of detector IDs in the format "milemarker-eastbound_lane".
+
+    Returns:
+    - flow_matrix: A 2D numpy array of shape [N_dec, N_time] containing flow data (veh/hr).
+    - speed_matrix: A 2D numpy array of shape [N_dec, N_time] containing speed data (m/s).
+    """
+    # Parse the XML file
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    # Extract unique time intervals from the XML file
+    time_intervals = sorted({float(interval.get('begin')) for interval in root.findall('interval')})
+    time_intervals.append(time_intervals[-1] + (time_intervals[1] - time_intervals[0]))  # Add the end time of the last interval
+
+    # Initialize matrices with NaN values
+    num_detectors = len(det_locations)
+    num_intervals = len(time_intervals) - 1  # Number of intervals is one less than the number of time points
+    flow_matrix = np.full((num_detectors, num_intervals), np.nan)
+    speed_matrix = np.full((num_detectors, num_intervals), np.nan)
+
+    # Create a dictionary to map detector IDs to their index in the matrix
+    det_index = {det_id: idx for idx, det_id in enumerate(det_locations)}
+
+    # Iterate over all intervals in the XML file
+    for interval in root.findall('interval'):
+        det_id = interval.get('id')
+        begin = float(interval.get('begin'))
+        flow = float(interval.get('flow'))
+        speed = float(interval.get('speed'))
+
+        # Skip if the detector ID is not in the list of locations
+        if det_id not in det_index:
+            continue
+
+        # Find the corresponding time interval index
+        interval_idx = int(begin // (time_intervals[1] - time_intervals[0]))
+
+        # Replace flow with NaN if it is 0
+        if flow == 0: flow = np.nan
+
+        # Replace speed with NaN if it is -1
+        if speed == -1: speed = np.nan
+
+        # Update the matrices
+        det_idx = det_index[det_id]
+        flow_matrix[det_idx, interval_idx] = flow
+        speed_matrix[det_idx, interval_idx] = speed
+
+    macro_data = {"speed": speed_matrix, "flow": flow_matrix}
+    return macro_data
+
 
 def extract_mean_speed_all_lanes(xml_file):
     '''

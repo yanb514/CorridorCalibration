@@ -1,0 +1,25 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <e1Detector id="upstream_0" lane="E1_1" pos="300" freq="50" file="det_trial_upstream_0.out.xml" />
+    <e1Detector id="upstream_1" lane="E1_0" pos="300" freq="50" file="det_trial_upstream_1.out.xml" />
+
+    <e1Detector id="ramp_0" lane="ramp_0" pos="150" freq="50" file="det_trial_ramp_0.out.xml" />
+
+    <e1Detector id="merge_0" lane="E2_2" pos="150" freq="50" file="det_trial_merge_0.out.xml" />
+    <e1Detector id="merge_1" lane="E2_1" pos="150" freq="50" file="det_trial_merge_1.out.xml" />
+    <e1Detector id="merge_2" lane="E2_0" pos="150" freq="50" file="det_trial_merge_2.out.xml" />
+
+    <e1Detector id="downstream_0" lane="E4_1" pos="50" freq="50" file="det_trial_downstream_0.out.xml" />
+    <e1Detector id="downstream_1" lane="E4_0" pos="50" freq="50" file="det_trial_downstream_1.out.xml" />
+
+
+    <!-- <laneAreaDetector id="lane_1" lanes="E0_1 E1_1 E2_2 E4_1"
+        pos="0" 
+        friendlyPos="false" period="30" file="lanearea.out.xml"
+        timeThreshold="1" jamThreshold="10"/>
+
+    <laneAreaDetector id="lane_2" lanes="E0_0 E1_0 E2_1 E4_0"
+        pos="0" 
+        friendlyPos="false" period="30" file="lanearea.out.xml"
+        timeThreshold="1" jamThreshold="10"/> -->
+
+</additional>
