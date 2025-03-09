@@ -1,70 +1,227 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- generated on 2025-02-28 11:27:01.261664 by findAllRoutes.py v1_22_0+0255-87c854e7851
-  options: -n processed_network.net.xml -o all_routes.rou.xml -s 19441652#0,1016548847,1016548860.217,108162303,683657786#1-AddedOnRampEdge,277208926,27828382,108162413#1.70,1070403831#1-AddedOnRampEdge,277208927#1-AddedOnRampEdge -t 1040737038,19442635,971686034,579664791,1192589176,1016548859,19440902,180933397,988591740#1,1141876515,634155175
--->
-
+<?xml version='1.0' encoding='UTF-8'?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0"/>
+    
+    
+    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0" maxSpeed="34.81165096351248" minGap="1.5938065104844015" accel="3.022346538786358" decel="1.0428115924602528" tau="0.5317315149807879" lcSublane="0.002929023905628436" maxSpeedLat="1.2782516047399735" lcAccelLat="1.8797774681211579" minGapLat="0.6986271674187223" lcStrategic="1.7903870628938083" lcCooperative="0.9306777856904532" lcPushy="0.7751464178714065" lcImpatience="0.9811640612008771" lcSpeedGain="0.3439350590925962" />
+    
 
-    <!-- 0: EB first downstream onramp to downstream -->
-    <route id="0" edges="683657786#1-AddedOnRampEdge 988591740#1-AddedOnRampEdge 988591740#1"/> 
-    <!-- 1: WB downstream onramp to downstream -->
-    <route id="1" edges="277208926 634155175-AddedOnRampEdge 634155175"/>
-    <!-- 2: WB upstream to the first offramp -->
-    <route id="2" edges="27828382 27828382-AddedOffRampEdge 180933397"/>
-    <!-- 3: WB second downstream onramp immediately offramp -->
-    <route id="3" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635"/>
-    <!-- 4: WB second downstream onramp immediately offramp, from the south onramp -->
-    <route id="4" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635"/>
-    <!-- 5: EB first upstream onramp immediately offramp -->
-    <route id="5" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570017 1141876515"/>
-    <!-- 6: EB first upstream onramp to the second offramp -->
-    <route id="6" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 1016548859"/>
-    <!-- 7: EB upstream immediately to the first offramp (side) -->
-    <route id="7" edges="108162303 977816372 977816372.143 19441728-AddedOffRampEdge 19441728-AddedOffRampEdge.29 1192589176"/>
-    <!-- 8: EB upstream immediately to the first offramp (main) -->
-    <route id="8" edges="108162303 977816372 977816372.143 19441728-AddedOffRampEdge 19441728-AddedOffRampEdge.29 579664791"/>
-    <!-- 9: WB second downstream onramp (north) to downstream -->
-    <route id="9" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
-    <!-- 10: WB second downstream onramp (south) to downstream -->
-    <route id="10" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
-    <!-- 11: WB third downstream onramp to the next offramp (main)-->
-    <route id="11" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038"/>
-    <!-- 12: WB third downstream onramp to the next offramp (side)-->
-    <route id="12" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902"/>
-    <!-- 13: WB third downstream onramp to the next next offramp -->
-    <route id="13" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 19442635"/>
-    <!-- 14: EB second upstream onramp (side) to the next offramp -->
-    <route id="14" edges="1016548860.217 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
-    <!-- 15: EB upstream to the second offramp -->
-    <route id="15" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570017 1141876515"/>
-    <!-- 16: EB upstream to the third offramp -->
-    <route id="16" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 1016548859"/>
-    <!-- 17: EB second upstream onramp (main) to the next offramp -->
-    <route id="17" edges="108162413#1.70 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
-    <!-- 18: EB second upstream onramp (side) to downstream -->
-    <route id="18" edges="1016548860.217 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
-    <!-- 19: WB upstream to the second offramp (main)-->
-    <route id="19" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038"/>
-    <!-- 20: WB upstream to the second offramp (side)-->
-    <route id="20" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902"/>
-    <!-- 21: WB upstream to the third offramp -->
-    <route id="21" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 19442635"/>
-    <!-- 22: EB second upstream onramp (main) to downstream -->
-    <route id="22" edges="108162413#1.70 963570022#1-AddedOnRampEdge 963570022#1 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
-    <!-- 23: WB first upstream onramp to downstream -->
-    <route id="23" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
-    <!-- 24: EB first upstream onramp to the third offramp -->
-    <route id="24" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
-    <!-- 25: WB upstream to downstream-->
-    <route id="25" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175"/>
-    <!-- 26: EB first onramp to downstream -->
-    <route id="26" edges="277208927#1-AddedOnRampEdge 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
-    <!-- 27: EB upstream to the last offramp -->
-    <route id="27" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 180933400 971686034"/>
-    <!-- 28: EB upstream to downstream -->
-    <route id="28" edges="108162303 977816372 977816372.143 634155184 963570018 963570018-AddedOffRampEdge 963570019 963570020#0 963570020#1-AddedOnRampEdge 963570020#1 988591741 988591740#0 988591740#1-AddedOnRampEdge 988591740#1"/>
+    
+    
+    
+    
+    <route id="1" edges="277208926 634155175-AddedOnRampEdge 634155175" />
+    
+    
+    
+    <route id="2" edges="27828382 27828382-AddedOffRampEdge 180933397" />
+    
+    
+    
+    <route id="3" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635" />
+    
+    
+    
+    <route id="4" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 19442635" />
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <route id="9" edges="19441652#0 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175" />
+    
+    
+    
+    <route id="10" edges="1016548847 19441652#1-AddedOnRampEdge 19441652#1 992666043 992666042 634155175-AddedOnRampEdge 634155175" />
+    
+    
+    
+    <route id="11" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038" />
+    
+    
+    
+    <route id="12" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902" />
+    
+    
+    
+    <route id="13" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 19442635" />
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <route id="19" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 1040737038" />
+    
+    
+    
+    <route id="20" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 1138588478 1138588478-AddedOffRampEdge 19440902" />
+    
+    
+    
+    <route id="21" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 19442635" />
+    
+    
+    
+    
+    
+    <route id="23" edges="1070403831#1-AddedOnRampEdge 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175" />
+    
+    
+    
+    
+    
+    <route id="25" edges="27828382 27828382-AddedOffRampEdge 974949114 977008894 977008893 977008892 977008891 992666043 992666042 634155175-AddedOnRampEdge 634155175" />
+    
+    
+    
+    
+    
+    
+    
 
   
+
+    <flow id="flow_1_380" route="1" begin="0" end="60" vehsPerHour="4800" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_380" route="9" begin="0" end="60" vehsPerHour="6600" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_380" route="10" begin="0" end="60" vehsPerHour="6600" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_380" route="23" begin="0" end="60" vehsPerHour="14760" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_380" route="25" begin="0" end="60" vehsPerHour="16440" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_380" route="3" begin="0" end="60" vehsPerHour="1800" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_380" route="4" begin="0" end="60" vehsPerHour="1800" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_380" route="13" begin="0" end="60" vehsPerHour="9960" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_380" route="21" begin="0" end="60" vehsPerHour="11640" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_380" route="11" begin="0" end="60" vehsPerHour="7080" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_380" route="12" begin="0" end="60" vehsPerHour="7080" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_380" route="19" begin="0" end="60" vehsPerHour="8760" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_380" route="20" begin="0" end="60" vehsPerHour="8760" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_381" route="1" begin="60" end="120" vehsPerHour="9720" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_381" route="9" begin="60" end="120" vehsPerHour="12240" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_381" route="10" begin="60" end="120" vehsPerHour="12240" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_381" route="23" begin="60" end="120" vehsPerHour="31080" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_381" route="25" begin="60" end="120" vehsPerHour="34200" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_381" route="3" begin="60" end="120" vehsPerHour="2520" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_381" route="4" begin="60" end="120" vehsPerHour="2520" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_381" route="13" begin="60" end="120" vehsPerHour="21360" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_381" route="21" begin="60" end="120" vehsPerHour="24480" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_381" route="11" begin="60" end="120" vehsPerHour="16800" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_381" route="12" begin="60" end="120" vehsPerHour="16800" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_381" route="19" begin="60" end="120" vehsPerHour="19920" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_381" route="20" begin="60" end="120" vehsPerHour="19920" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_382" route="1" begin="120" end="180" vehsPerHour="8640" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_382" route="9" begin="120" end="180" vehsPerHour="12840" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_382" route="10" begin="120" end="180" vehsPerHour="12840" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_382" route="23" begin="120" end="180" vehsPerHour="32160" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_382" route="25" begin="120" end="180" vehsPerHour="34200" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_382" route="3" begin="120" end="180" vehsPerHour="4200" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_382" route="4" begin="120" end="180" vehsPerHour="4200" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_382" route="13" begin="120" end="180" vehsPerHour="23520" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_382" route="21" begin="120" end="180" vehsPerHour="25560" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_382" route="11" begin="120" end="180" vehsPerHour="16200" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_382" route="12" begin="120" end="180" vehsPerHour="16200" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_382" route="19" begin="120" end="180" vehsPerHour="18240" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_382" route="20" begin="120" end="180" vehsPerHour="18240" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_383" route="1" begin="180" end="240" vehsPerHour="10560" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_383" route="9" begin="180" end="240" vehsPerHour="15240" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_383" route="10" begin="180" end="240" vehsPerHour="15240" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_383" route="23" begin="180" end="240" vehsPerHour="35280" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_383" route="25" begin="180" end="240" vehsPerHour="37680" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_383" route="3" begin="180" end="240" vehsPerHour="4680" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_383" route="4" begin="180" end="240" vehsPerHour="4680" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_383" route="13" begin="180" end="240" vehsPerHour="24720" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_383" route="21" begin="180" end="240" vehsPerHour="27120" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_383" route="11" begin="180" end="240" vehsPerHour="16920" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_383" route="12" begin="180" end="240" vehsPerHour="16920" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_383" route="19" begin="180" end="240" vehsPerHour="19320" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_383" route="20" begin="180" end="240" vehsPerHour="19320" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_384" route="1" begin="240" end="300" vehsPerHour="14280" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_384" route="9" begin="240" end="300" vehsPerHour="17040" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_384" route="10" begin="240" end="300" vehsPerHour="17040" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_384" route="23" begin="240" end="300" vehsPerHour="34200" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_384" route="25" begin="240" end="300" vehsPerHour="37920" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_384" route="3" begin="240" end="300" vehsPerHour="2760" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_384" route="4" begin="240" end="300" vehsPerHour="2760" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_384" route="13" begin="240" end="300" vehsPerHour="19920" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_384" route="21" begin="240" end="300" vehsPerHour="23640" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_384" route="11" begin="240" end="300" vehsPerHour="15600" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_384" route="12" begin="240" end="300" vehsPerHour="15600" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_384" route="19" begin="240" end="300" vehsPerHour="19320" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_384" route="20" begin="240" end="300" vehsPerHour="19320" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_385" route="1" begin="300" end="360" vehsPerHour="9840" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_385" route="9" begin="300" end="360" vehsPerHour="13680" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_385" route="10" begin="300" end="360" vehsPerHour="13680" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_385" route="23" begin="300" end="360" vehsPerHour="32400" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_385" route="25" begin="300" end="360" vehsPerHour="33480" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_385" route="3" begin="300" end="360" vehsPerHour="3840" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_385" route="4" begin="300" end="360" vehsPerHour="3840" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_385" route="13" begin="300" end="360" vehsPerHour="22560" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_385" route="21" begin="300" end="360" vehsPerHour="23640" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_385" route="11" begin="300" end="360" vehsPerHour="16560" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_385" route="12" begin="300" end="360" vehsPerHour="16560" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_385" route="19" begin="300" end="360" vehsPerHour="17640" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_385" route="20" begin="300" end="360" vehsPerHour="17640" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_386" route="1" begin="360" end="420" vehsPerHour="10320" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_386" route="9" begin="360" end="420" vehsPerHour="14880" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_386" route="10" begin="360" end="420" vehsPerHour="14880" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_386" route="23" begin="360" end="420" vehsPerHour="32040" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_386" route="25" begin="360" end="420" vehsPerHour="34920" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_386" route="3" begin="360" end="420" vehsPerHour="4560" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_386" route="4" begin="360" end="420" vehsPerHour="4560" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_386" route="13" begin="360" end="420" vehsPerHour="21720" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_386" route="21" begin="360" end="420" vehsPerHour="24600" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_386" route="11" begin="360" end="420" vehsPerHour="13800" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_386" route="12" begin="360" end="420" vehsPerHour="13800" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_386" route="19" begin="360" end="420" vehsPerHour="16680" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_386" route="20" begin="360" end="420" vehsPerHour="16680" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_387" route="1" begin="420" end="480" vehsPerHour="12120" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_387" route="9" begin="420" end="480" vehsPerHour="14640" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_387" route="10" begin="420" end="480" vehsPerHour="14640" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_387" route="23" begin="420" end="480" vehsPerHour="31440" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_387" route="25" begin="420" end="480" vehsPerHour="34440" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_387" route="3" begin="420" end="480" vehsPerHour="2520" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_387" route="4" begin="420" end="480" vehsPerHour="2520" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_387" route="13" begin="420" end="480" vehsPerHour="19320" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_387" route="21" begin="420" end="480" vehsPerHour="22320" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_387" route="11" begin="420" end="480" vehsPerHour="14760" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_387" route="12" begin="420" end="480" vehsPerHour="14760" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_387" route="19" begin="420" end="480" vehsPerHour="17760" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_387" route="20" begin="420" end="480" vehsPerHour="17760" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_388" route="1" begin="480" end="540" vehsPerHour="9600" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_388" route="9" begin="480" end="540" vehsPerHour="12600" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_388" route="10" begin="480" end="540" vehsPerHour="12600" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_388" route="23" begin="480" end="540" vehsPerHour="31440" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_388" route="25" begin="480" end="540" vehsPerHour="33840" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_388" route="3" begin="480" end="540" vehsPerHour="3000" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_388" route="4" begin="480" end="540" vehsPerHour="3000" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_388" route="13" begin="480" end="540" vehsPerHour="21840" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_388" route="21" begin="480" end="540" vehsPerHour="24240" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_388" route="11" begin="480" end="540" vehsPerHour="17160" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_388" route="12" begin="480" end="540" vehsPerHour="17160" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_388" route="19" begin="480" end="540" vehsPerHour="19560" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_388" route="20" begin="480" end="540" vehsPerHour="19560" departSpeed="desired" type="hdv" />
+    <flow id="flow_1_389" route="1" begin="540" end="600" vehsPerHour="10920" departSpeed="desired" type="hdv" />
+    <flow id="flow_9_389" route="9" begin="540" end="600" vehsPerHour="14760" departSpeed="desired" type="hdv" />
+    <flow id="flow_10_389" route="10" begin="540" end="600" vehsPerHour="14760" departSpeed="desired" type="hdv" />
+    <flow id="flow_23_389" route="23" begin="540" end="600" vehsPerHour="33240" departSpeed="desired" type="hdv" />
+    <flow id="flow_25_389" route="25" begin="540" end="600" vehsPerHour="35160" departSpeed="desired" type="hdv" />
+    <flow id="flow_3_389" route="3" begin="540" end="600" vehsPerHour="3840" departSpeed="desired" type="hdv" />
+    <flow id="flow_4_389" route="4" begin="540" end="600" vehsPerHour="3840" departSpeed="desired" type="hdv" />
+    <flow id="flow_13_389" route="13" begin="540" end="600" vehsPerHour="22320" departSpeed="desired" type="hdv" />
+    <flow id="flow_21_389" route="21" begin="540" end="600" vehsPerHour="24240" departSpeed="desired" type="hdv" />
+    <flow id="flow_11_389" route="11" begin="540" end="600" vehsPerHour="15840" departSpeed="desired" type="hdv" />
+    <flow id="flow_12_389" route="12" begin="540" end="600" vehsPerHour="15840" departSpeed="desired" type="hdv" />
+    <flow id="flow_19_389" route="19" begin="540" end="600" vehsPerHour="17760" departSpeed="desired" type="hdv" />
+    <flow id="flow_20_389" route="20" begin="540" end="600" vehsPerHour="17760" departSpeed="desired" type="hdv" />
 </routes>

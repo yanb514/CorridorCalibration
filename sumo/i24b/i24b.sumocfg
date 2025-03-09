@@ -6,9 +6,10 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        <net-file value="i24_12-15.net.xml"/>
-        <route-files value="i24_with_flows.rou.xml"/>
-        <additional-files value="12-15_gps.xml,12-15_lanelocs.xml"/>
+        <net-file value="i24b.net.xml"/>
+        <route-files value="i24b.rou.xml"/>
+        <!-- <additional-files value="12-15_gps.xml,12-15_lanelocs.xml"/> -->
+        <additional-files value="12-15_detectors.xml"/>
     </input>
 
     <!-- <output>
@@ -19,6 +20,8 @@
 
     <time>
         <step-length value="0.5"/>
+        <begin value="0"/>       <!-- Start time of the simulation (0 seconds) -->
+        <end value="600"/>       <!-- End time of the simulation (600 seconds) -->
     </time>
 
 </configuration>

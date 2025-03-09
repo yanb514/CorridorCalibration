@@ -3,14 +3,15 @@ generate flows in .rou.xml by detector measurements
 quick and easy, not precise
 '''
 import xml.etree.ElementTree as ET
+import xml.dom.minidom as minidom
 import csv
 from collections import defaultdict
 
 # Configuration - Update these paths to match your files
 DETECTOR_LOCATIONS_FILE = "12-15_lanelocs.xml"
-ROUTES_FILE = "i24b.rou.xml"
+ROUTES_FILE = "i24b_all_routes.rou.xml"
 DETECTOR_MEASUREMENTS_FILE = "detector_measurements_i24wRDSdetectors.csv"
-OUTPUT_ROUTES_FILE = "i24_with_flows.rou.xml"
+OUTPUT_ROUTES_FILE = "i24b.rou.xml"
 START_MINUTE = 380  # Start of measurement window (minutes)
 END_MINUTE = 390    # End of measurement window (minutes)
 
@@ -63,14 +64,15 @@ def main():
             # Find routes containing this edge
             for route_id, edges in routes.items():
                 if edge in edges:
-                    q = int(row['qPKW'])
+                    q = int(row['qPKW']) # every 30 sec
                     v = float(row['vPKW']) # TODO v=0 if no vehicle
                     
                     # Aggregate data per route per time interval
-                    data = time_interval_data[interval][route_id]
-                    data['total_q'] += q
-                    data['total_v'] += v
-                    data['count'] += 1
+                    if q>0:
+                        data = time_interval_data[interval][route_id]
+                        data['total_q'] += q
+                        data['total_v'] += v*0.3048
+                        data['count'] += 1
 
     # Step 5: Create flow elements
     root = rou_tree.getroot()
@@ -94,16 +96,20 @@ def main():
             flow_elem = ET.Element('flow', {
                 'id': f'flow_{route_id}_{interval}',
                 'route': route_id,
-                'begin': str(begin-START_MINUTE*60),
-                'end': str(end-START_MINUTE*60),
-                'vehsPerHour': str(total_q * 60),  # Convert minute data to hourly rate
-                'speed': f"{avg_speed:.2f}",
+                'begin': str(begin-start_time),
+                'end': str(end-start_time),
+                'vehsPerHour': str(total_q * 120),  # Convert 30-sec data to hourly rate
+                'departSpeed': "desired", # f"{avg_speed:.2f}",
                 'type': 'hdv'
             })
             root.append(flow_elem)
 
     # Step 6: Save modified route file
-    rou_tree.write(OUTPUT_ROUTES_FILE, encoding='UTF-8', xml_declaration=True)
+    rough_string = ET.tostring(root, encoding='UTF-8', xml_declaration=True)
+    parsed = minidom.parseString(rough_string)
+    with open(OUTPUT_ROUTES_FILE, 'w', encoding='UTF-8') as f:
+        f.write(parsed.toprettyxml(indent="    "))  # Use 4 spaces for indentation
+    # rou_tree.write(OUTPUT_ROUTES_FILE, encoding='UTF-8', xml_declaration=True)
     print(f"Generated time-varying route file saved to {OUTPUT_ROUTES_FILE}")
 
 if __name__ == '__main__':
