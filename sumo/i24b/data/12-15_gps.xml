@@ -1,0 +1,22 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+  <poi id="555-eastbound" x="1616.7434196375543" y="5281.438618049491" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="557-eastbound" x="1994.8591005970957" y="4978.28789953934" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="559-eastbound" x="2692.796583723626" y="4446.805985061452" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="560-eastbound" x="3157.107094469713" y="4044.9651368805207" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="561-eastbound" x="3346.724067133735" y="3828.1478344993666" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="562-eastbound" x="3871.779434334021" y="3340.495047851" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="563-eastbound" x="4453.556333784014" y="2712.5555160595104" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="564-eastbound" x="5096.6516795956995" y="2001.0369444922544" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="565-eastbound" x="5524.38527946081" y="1450.550064125564" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="553-westbound" x="1154.2938094137935" y="5573.780297262128" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="555-westbound" x="1616.7434196375543" y="5281.438618049491" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="556-westbound" x="1780.671842042706" y="5128.387235998176" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="558-westbound" x="2380.2898493487155" y="4702.686841205228" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="559-westbound" x="2692.796583723626" y="4446.805985061452" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="560-westbound" x="3157.107094469713" y="4044.9651368805207" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="561-westbound" x="3346.724067133735" y="3828.1478344993666" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="562-westbound" x="3871.779434334021" y="3340.495047851" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="563-westbound" x="4453.556333784014" y="2712.5555160595104" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="564-westbound" x="5096.6516795956995" y="2001.0369444922544" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+  <poi id="565-westbound" x="5524.38527946081" y="1450.550064125564" type="detector_true_loc" imgFile="square_orange.png" width="10" height="10" />
+</additional>

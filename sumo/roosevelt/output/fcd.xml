@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-04-03 16:25:30 by Eclipse SUMO sumo Version 1.19.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="sumo_scenarios/roosevelt/roosevelt.net.xml"/>
+        <route-files value="sumo_scenarios/roosevelt/roosevelt.rou.xml"/>
+    </input>
+
+    <output>
+        <fcd-output value="sumo_scenarios/roosevelt/output/fcd.xml"/>
+        <fcd-output.acceleration value="true"/>
+        <fcd-output.max-leader-distance value="80"/>
+        <collision-output value="sumo_scenarios/roosevelt/output/coll.xml"/>
+        <edgedata-output value="sumo_scenarios/roosevelt/by_edge.xml"/>
+        <lanedata-output value="sumo_scenarios/roosevelt/by_lane.xml"/>
+        <statistic-output value="sumo_scenarios/roosevelt/stats.xml"/>
+    </output>
+
+    <time>
+        <step-length value="0.1"/>
+    </time>
+
+    <processing>
+        <lateral-resolution value="3.2"/>
+        <collision.action value="none"/>
+    </processing>
+
+    <report>
+        <no-warnings value="true"/>
+        <no-step-log value="true"/>
+        <step-log.period value="50"/>
+    </report>
+
+    <traci_server>
+        <remote-port value="43993"/>
+    </traci_server>
+
+    <random_number>
+        <seed value="23423"/>
+    </random_number>
+
+</configuration>
+-->
+
+<fcd-export xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/fcd_file.xsd">
+</fcd-export>

@@ -7,12 +7,24 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 
 ---
 
+## **Acknowledgments**  
+- The work is sponsored by the U.S. Department of Energy (DOE) Vehicle Technologies Office (VTO) under the Energy Efficient Mobility Systems (EEMS) Program.
+- The work can be cited as:
+```
+@misc{wang2024calibrating,
+  title={Calibrating Microscopic Traffic Models with Macroscopic Data},
+  author={Wang, Yanbing and de Souza, Felipe and Zhang, Yaozhong and Karbowski, Dominik},
+  note={https://ssrn.com/abstract=5065262},
+  year={2024}
+}
+```
+---
+
 ## **Table of Contents**  
+- [Acknowledgments](#acknowledgments)  
 - [Features](#features)  
 - [Installation](#installation)  
 - [Usage](#usage)     
-- [License](#license)  
-- [Acknowledgments](#acknowledgments)  
 
 ---
 
@@ -21,16 +33,46 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 - Utilize a global optimization algorithm 
 - Support parallel computation
 - Customizable evaluation metrics 
-- Two scenarios: synthetic highway on-ramp merging (on_ramp), and I-24 Westbound (I24scenario) 
+- Scenario bank: [TODO]
+  - `onramp`: a synthetic highway on-ramp merging scenario
+  - `i24`: I-24 Westbound between postmile xx to xx
+  - `i24b`: I-24 Westbound between postmile xx to xx, to support benchmarking work.
+  - `roosevelt` (coming soon): Chicago Roosevelt Rd from Canal to Michigan with SPaT. 
 
 ---
 
 ## **Installation**  
 
 ### Dependencies  
-This package is built on Python 3.11, and requires installation of [optuna](https://optuna.org/).
+This package is built on Python 3.11, and requires installation of [optuna](https://optuna.org/), and [sumo](https://sumo.dlr.de/docs/Installing/index.html)
 
 ## **Usage**  
+
+### Directory structure
+```
+CorridorCalibration
+│   README.md
+│   utils_data_read.py    
+│   utils_macro.py
+│   utils_vis.py
+│
+└───sumo
+│   │   config.json
+│   │
+│   └───<SCENARIO>
+│       │   SCENARIO_calibrate.py
+│       │   SCENARIO_result.py
+│       │   SCENARIO.sumocfg
+│       │   SCENARIO.net.xml
+│       │   SCENARIO.rou.xml
+│       │   ...
+│       │   
+│       └───_log
+│       └───calibration_result
+│       └───data
+│           │   Traffic measurements from stationary sensors
+│           │   ...
+```
 
 ### Data download and processing
 The RDS detector data for the I-24 scenario is from Tennessee Department of Transportation, and can be downloaded from the [I-24 MOTION project website](https://i24motion.org). 
@@ -40,30 +82,88 @@ The raw RDS data is filtered and processed using:
 # write original dat.gz file to a .csv file. Please see inline documentation
 utils_data_read.read_and_filter_file()
 ```
-### Configuration
-First set the configuration used in `sumo/I24scenario/i24_calibrate.py`. Create a `config.json` file under `sumo/` with the following setting:
+### Configuration setup
+Create a `config.json` file under `sumo/` with the following template:
 ```json
 {
-    "SCENARIO": "I24_scenario" or "on_ramp",
-    "EXP": "3b", # experiment label "1a", "1b", "1c",...,"3c"
-    "N_TRIALS": 20000, # optimization trials
-    "N_JOBS": 120, # cores
-    "RDS_DIR": "", # directory of the processed RDS .csv file
-    "SUMO_EXE": "", # sumo .exe file path
-    "SUMO_EXE_PATH": "", # alternative sumo .exe file path
+    "EXP": "3b",
+    "N_TRIALS": 20000,
+    "N_JOBS": 120,
+    "SUMO_PATH": "REPLACE_WITH_YOUR_LOCAL_SUMO_PATH",
+    "onramp":{
+        "SIMULATION_TIME": 480,
+        "N_ROUTES": 2,
+        "N_INTERVALS": 1
+    },
+    "i24":{
+        "SIMULATION_TIME": 21600,
+        "N_ROUTES": 5,
+        "N_INTERVALS": 12,
+        "RDS_DIR": "REPLACE_WITH_YOUR_LOCAL_RDS_PATH"
+    },
+    "i24b":{
+        "RDS_DIR": "REPLACE_WITH_YOUR_LOCAL_RDS_PATH"
+    },
+
+    "DEFAULT_PARAMS": {
+        "cf":{
+            "maxSpeed": 30.55,
+            "minGap": 2.5,
+            "accel": 1.5,
+            "decel": 2,
+            "tau": 1.4,
+            "emergencyDecel": 4.0
+        },
+        "lc":{
+            "laneChangeModel": "SL2015",
+            "lcSublane": 1.0,
+            "latAlignment": "arbitrary",
+            "maxSpeedLat": 1.4,
+            "lcAccelLat": 0.7,
+            "minGapLat": 0.4,
+            "lcStrategic": 10.0,
+            "lcCooperative": 1.0,
+            "lcPushy": 0.4,
+            "lcImpatience": 0.9,
+            "lcSpeedGain": 1.5,
+            "lcKeepRight": 0.0,
+            "lcOvertakeRight": 0.0
+        }
+    },
+    "PARAMS_RANGE": {
+        "cf":{
+            "maxSpeed": [30, 35],
+            "minGap": [1,3],
+            "accel": [1,4],
+            "decel": [1,3],
+            "tau": [0.5,2]
+        },
+        "lc":{
+            "lcSublane": [0,10],
+            "maxSpeedLat": [0,10],
+            "lcAccelLat": [0,5],
+            "minGapLat": [0,5],
+            "lcStrategic": [0,10],
+            "lcCooperative": [0,10],
+            "lcPushy": [0,1],
+            "lcImpatience": [0,1],
+            "lcSpeedGain": [0,1]
+        }
+    }
 }
 ```
+You may set `N_TRIALS` and `N_JOBS` based on your computational resources.
 
 ### Running calibration  
-To run the calibration of I-24 scenario:
+To run the calibration of any scenario, navigate to the SCENARIO folder and run `SCENARIO_calibrate.py`. For example, to run the `i24` scenario:
 ```bash  
-cd sumo/I24scenario
+cd sumo/i24
 python i24_calibrate.py
 ```  
-The calibration progress such as current best parameters will be saved in `sumo/I24scenario/_log`.
+The calibration progress such as current best parameters will be saved in `sumo/i24/_log`.
 
 ### Evaluation and plotting
-All evaluation related computations are located in `sumo/I24scenario/i24_calibrate_results.py`.
+All evaluation related computations are located in `sumo/SCENARIO/SCENARIO_results.py`.
 
 ### Key utility functions
 In summary,
@@ -86,21 +186,7 @@ cd sumo/SCENARIO/calibrated
 sumo -c SCENARIO.sumocfg
 ```
 
+### TODOS
+- temp files handling in i24 and onramp scenarios
+- 
 ---
-
-## **License**  
-This project is licensed under the [MIT License](LICENSE).  
-
----
-
-## **Acknowledgments**  
-- The work can be cited as:
-```
-@misc{wang2024calibrating,
-  title={Calibrating Microscopic Traffic Models with Macroscopic Data},
-  author={Wang, Yanbing and de Souza, Felipe and Zhang, Yaozhong and Karbowski, Dominik},
-  note={https://ssrn.com/abstract=5065262},
-  year={2024}
-}
-```
-- The work is sponsored by the U.S. Department of Energy (DOE) Vehicle Technologies Office (VTO) under the Energy Efficient Mobility Systems (EEMS) Program.

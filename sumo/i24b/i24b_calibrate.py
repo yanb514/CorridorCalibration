@@ -7,6 +7,7 @@ Optuna allows
 - log progress
 '''
 import optuna
+from optuna.pruners import MedianPruner
 import subprocess
 import os
 import os
@@ -19,71 +20,37 @@ import logging
 from datetime import datetime
 import json
 import pandas as pd
+from pathlib import Path
+import tempfile
 
 main_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')) # two levels up
 sys.path.insert(0, main_path)
 import utils_data_read as reader
 
 # ================ CONFIGURATION ====================
+SCENARIO = "i24b"
 with open('../config.json', 'r') as config_file:
     config = json.load(config_file)
 
-computer_name = os.environ.get('HOSTNAME', 'Unknown')
+# SUMO_EXE = config['SUMO_PATH'] # customize SUMO_PATH in config.json
+SUMO_EXE = os.getenv("SUMO_PATH", config['SUMO_PATH'])  # Fallback to config
 
-if "CSI" in computer_name:
-    SUMO_EXE = config['SUMO_PATH']["CSI"]
-elif "VMS" in computer_name:
-    SUMO_EXE = config['SUMO_PATH']["VMS"]
-else: # run on SOL
-    SUMO_EXE = config['SUMO_PATH']["SOL"]
-
-SCENARIO = "i24b"
-EXP = "3b" # experiment label
-N_TRIALS = 10000 # config["N_TRIALS"] # optimization trials
-N_JOBS = 120 # config["N_JOBS"] # cores
-RDS_DIR = "detector_measurements_i24wRDSdetectors.csv"
-# RDS_DIR = os.path.join("../..", "data/RDS/I24_WB_52_60_11132023.csv")
+N_TRIALS = config["N_TRIALS"]  # config["N_TRIALS"] # optimization trials
+N_JOBS = config["N_JOBS"]  # config["N_JOBS"] # cores
+EXP = config["EXP"] # experiment label
+RDS_DIR = config[SCENARIO]["RDS_DIR"] # directory of the RDS data
+DEFAULT_PARAMS = config["DEFAULT_PARAMS"]
 # ================================================
 
-# follows convention e.g., 56_7_0, milemarker 56.7, lane 1
-
-DEFAULT_PARAMS = {
-    "maxSpeed": 30.55,
-    "minGap": 2.5,
-    "accel": 1.5,
-    "decel": 2,
-    "tau": 1.4,
-    "emergencyDecel": 4.0,
-    "laneChangeModel": "SL2015",
-    "lcSublane": 1.0,
-    "latAlignment": "arbitrary",
-    "maxSpeedLat": 1.4,
-    "lcAccelLat": 0.7,
-    "minGapLat": 0.4,
-    "lcStrategic": 10.0,
-    "lcCooperative": 1.0,
-    "lcPushy": 0.4,
-    "lcImpatience": 0.9,
-    "lcSpeedGain": 1.5,
-    "lcKeepRight": 0.0,
-    "lcOvertakeRight": 0.0
-}
 
 if "1" in EXP:
-    param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau']
-    min_val = [30.0, 1.0, 1.0, 1.0, 0.5]  
-    max_val = [35.0, 3.0, 4.0, 3.0, 2.0] 
+    params_range = config["PARAMS_RANGE"]["cf"]
 elif "2" in EXP:
-    param_names = ['lcSublane', 'maxSpeedLat', 'lcAccelLat', 'minGapLat', 'lcStrategic', 
-                   'lcCooperative', 'lcPushy','lcImpatience','lcSpeedGain', ]
-    min_val = [0,  0,  0,  0, 0,  0, 0, 0, 0, 0, 0]  
-    max_val = [10, 10, 5,  5, 10, 1, 1, 1, 1, 1, 1] 
+    params_range = config["PARAMS_RANGE"]["lc"]
 elif "3" in EXP:
-    param_names = ['maxSpeed', 'minGap', 'accel', 'decel', 'tau', 
-                   'lcSublane', 'maxSpeedLat', 'lcAccelLat', 'minGapLat', 'lcStrategic', 
-                   'lcCooperative', 'lcPushy','lcImpatience','lcSpeedGain']
-    min_val = [30.0, 1.0, 1.0, 1.0, 0.5, 0,  0,  0,  0, 0,  0, 0, 0, 0]  
-    max_val = [35.0, 3.0, 4.0, 3.0, 2.0, 10, 10, 5,  5, 10, 1, 1, 1, 1] 
+    params_range = {**config["PARAMS_RANGE"]["cf"], **config["PARAMS_RANGE"]["lc"]}
+param_names, ranges = zip(*params_range.items())
+min_val, max_val = zip(*ranges)
 
 if "a" in EXP:
     MEAS = "flow"
@@ -93,8 +60,6 @@ elif "c" in EXP:
     MEAS = "occupancy"
 
 initial_guess = {key: DEFAULT_PARAMS[key] for key in param_names if key in DEFAULT_PARAMS}
-
-
 
 
 def extract_detector_locations(csv_file):
@@ -135,9 +100,8 @@ def run_sumo(sim_config, tripinfo_output=None, fcd_output=None):
     try:
         subprocess.run(command, check=False, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
-        print(f"SUMO simulation failed with error: {e}")
-    except OSError as e:
-        print(f"Execution failed: {e}")
+        logging.error(f"SUMO failed: {e}")
+        raise
 
 
 def update_sumo_configuration(param):
@@ -173,61 +137,80 @@ def update_sumo_configuration(param):
     tree.write(file_path, encoding='UTF-8', xml_declaration=True)
 
 
-def create_temp_config(param, trial_number):
+
+def create_temp_config(param: dict, temp_dir: Path, trial_number: int) -> Path:
     """
-    Update the SUMO configuration file with the given parameters and save it as a new file.
-    create new .rou.xml and .sumocfg files for each trial
+    Creates temporary SUMO configuration files with modified parameters in a specified directory.
     
-    Parameters:
-        param (dict): List of parameter values [maxSpeed, minGap, accel, decel, tau]
-        trial_number (int): The trial number to be used for naming the new file.
+    Args:
+        param: Dictionary of parameter values to apply
+        temp_dir: Path to temporary directory for file storage
+        trial_number: Trial number for unique filenames
+        
+    Returns:
+        Path to the created SUMO configuration file
     """
-    
-    # Define the path to your original rou.xml and sumocfg files
-    original_rou_file_path = SCENARIO + '.rou.xml'
-    original_net_file_path = SCENARIO + '.net.xml'
-    original_sumocfg_file_path = SCENARIO + '.sumocfg'
-    original_add_file_path = '12-15_detectors.xml'
-    
-    # Create the directory for the new files if it doesn't exist
-    output_dir = os.path.join('temp', str(trial_number))
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # ==================== .Parse the original rou.xml file ==========================
-    rou_tree = ET.parse(original_rou_file_path)
-    rou_root = rou_tree.getroot()
+    # Base filenames
+    scenario_files = {
+        'rou': f"{SCENARIO}.rou.xml",
+        'net': f"{SCENARIO}.net.xml",
+        'add': "12-15_detectors.xml",
+        'sumocfg': f"{SCENARIO}.sumocfg"
+    }
+    print(scenario_files)
 
-    # Find the vType element with id="hdv"
-    for vtype in rou_root.findall('vType'):
-        if vtype.get('id') == 'hdv':
-            # Update the attributes with the provided parameters
-            for key, val in param.items():
-                vtype.set(key, str(val))
-            break
+    # Create new filenames with trial number prefix
+    new_files = {
+        key: temp_dir / f"{trial_number}_{filename}"
+        for key, filename in scenario_files.items()
+    }
 
-    new_rou_file_path = os.path.join(output_dir, f"{trial_number}_{SCENARIO}.rou.xml")
-    rou_tree.write(new_rou_file_path, encoding='UTF-8', xml_declaration=True)
+    # 1. Process vehicle type parameters in rou.xml
+    try:
+        # Parse original routing file
+        rou_tree = ET.parse(scenario_files['rou'])
+        rou_root = rou_tree.getroot()
 
-    # ==================== copy original net.xml file ==========================
-    shutil.copy(original_net_file_path, os.path.join(output_dir, f"{trial_number}_{SCENARIO}.net.xml"))
+        # Find and modify the HDV vehicle type
+        for vtype in rou_root.findall('vType'):
+            if vtype.get('id') == 'hdv':
+                # Update the attributes with the provided parameters
+                for key, val in param.items():
+                    vtype.set(key, str(val))
+                break
 
-    # ==================== copy original add.xml file ==========================
-    new_add_file_path = os.path.join(output_dir, f"{trial_number}_{original_add_file_path}")
-    shutil.copy(original_add_file_path, new_add_file_path)
+        # Write modified routing file
+        rou_tree.write(new_files['rou'], encoding='UTF-8', xml_declaration=True)
     
-    #  ==================== parse original sumocfg.xml file ==========================
-    sumocfg_tree = ET.parse(original_sumocfg_file_path)
-    sumocfg_root = sumocfg_tree.getroot()
-    input_element = sumocfg_root.find('input')
-    if input_element is not None:
-        input_element.find('route-files').set('value', f"{trial_number}_{SCENARIO}.rou.xml")
-        input_element.find('net-file').set('value', f"{trial_number}_{SCENARIO}.net.xml")
-        input_element.find('additional-files').set('value',  f"{trial_number}_{original_add_file_path}")
+    except FileNotFoundError as e:
+        raise RuntimeError(f"Missing required file: {scenario_files['rou']}") from e
 
-    new_sumocfg_file_path = os.path.join(output_dir, f"{trial_number}_{SCENARIO}.sumocfg")
-    sumocfg_tree.write(new_sumocfg_file_path, encoding='UTF-8', xml_declaration=True)
+    # 2. Copy static files (network and detector definitions)
+    try:
+        shutil.copy(scenario_files['net'], new_files['net'])
+        shutil.copy(scenario_files['add'], new_files['add'])
+    except FileNotFoundError as e:
+        raise RuntimeError(f"Missing scenario file: {e.filename}") from e
+
+    # 3. Update sumo configuration file
+    try:
+        sumocfg_tree = ET.parse(scenario_files['sumocfg'])
+        sumocfg_root = sumocfg_tree.getroot()
+        
+        # Update file references in the configuration
+        input_elem = sumocfg_root.find('input')
+        if input_elem is not None:
+            input_elem.find('route-files').set('value', new_files['rou'].name)
+            input_elem.find('net-file').set('value', new_files['net'].name)
+            input_elem.find('additional-files').set('value', new_files['add'].name)
+        
+        # Write modified configuration
+        sumocfg_tree.write(new_files['sumocfg'], encoding='UTF-8', xml_declaration=True)
     
-    return new_sumocfg_file_path, output_dir
+    except FileNotFoundError as e:
+        raise RuntimeError(f"Missing sumo config file: {scenario_files['sumocfg']}") from e
+
+    return new_files['sumocfg']
 
 
 def objective(trial):
@@ -237,16 +220,17 @@ def objective(trial):
         param_name: trial.suggest_uniform(param_name, min_val[i], max_val[i])
         for i, param_name in enumerate(param_names)
     }
-    # print(driver_param, trial.number)
-    
-    # Update SUMO configuration or route files with these parameters
-    temp_config_path, temp_path = create_temp_config(driver_param, trial.number)
+    with tempfile.TemporaryDirectory(prefix=f"trial_{trial.number}_") as tmp_dir:
+        temp_dir = Path(tmp_dir)
+        config_path = create_temp_config(driver_param, temp_dir, trial.number)
+        
+        # Run SUMO - files automatically write to temp_dir
+        run_sumo(config_path)
+        
+        # Process results
+        output_xml = temp_dir / "out.xml"
+        simulated_output = reader.extract_sim_meas_i24b(det_locations, xml_file=output_xml)
 
-    # Run SUMO simulation
-    run_sumo(temp_config_path)
-    
-    # Extract simulated traffic volumes
-    simulated_output = reader.extract_sim_meas_i24b(det_locations, xml_file=f"{temp_path}/out.xml") 
     
     # --- RMSE ---
     diff = simulated_output[MEAS] - measured_output[MEAS] # measured output may have nans
@@ -256,17 +240,13 @@ def objective(trial):
     #              / np.nan_to_num(measured_output[MEAS][:, start_idx:end_idx_rds], nan=0.1) # ensures NaN values in measured_output are replaced with 1 to avoid division by zero or NaN issues.
     # error = np.sqrt(np.nanmean((relative_diff**2).flatten()))
 
-    clear_directory(os.path.join("temp", str(trial.number)))
+    # clear_directory(os.path.join("temp", str(trial.number)))
     # logging.info(f'Trial {trial.number}: param={driver_param}, error={error}')
     
     return error
 
 def logging_callback(study, trial):
-    # if trial.state == optuna.trial.TrialState.COMPLETE:
-    #     logging.info(f'Trial {trial.number} succeeded: value={trial.value}, params={trial.params}')
-    # elif trial.state == optuna.trial.TrialState.FAIL:
-    #     logging.error(f'Trial {trial.number} failed: exception={trial.user_attrs.get("exception")}')
-    
+
     if study.best_trial.number == trial.number:
         logging.info(f'Current Best Trial: {study.best_trial.number}')
         logging.info(f'Current Best Value: {study.best_value}')
@@ -292,41 +272,43 @@ def clear_directory(directory_path):
 if __name__ == "__main__":
 
     # ================================= prepare RDS data for model calibration
-    # det_locations = extract_detector_locations(RDS_DIR)
-    # det_locations = [det_loc for det_loc in det_locations if "westbound" in det_loc] # filter westbound only
-    # measured_output = reader.rds_to_matrix_i24b(rds_file=RDS_DIR, det_locations=det_locations)
+    det_locations = extract_detector_locations(RDS_DIR)
+    det_locations = [det_loc for det_loc in det_locations if "westbound" in det_loc] # filter westbound only
+    measured_output = reader.rds_to_matrix_i24b(rds_file=RDS_DIR, det_locations=det_locations)
 
     # ================================= run default 
-    # update_sumo_configuration(initial_guess)
-    # run_sumo(sim_config=SCENARIO+".sumocfg")
+    update_sumo_configuration(initial_guess)
+    run_sumo(sim_config=SCENARIO+".sumocfg")
     
-
     # ================================= Create a study object and optimize the objective function
-    # clear_directory("temp")
-    # current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    # log_dir = '_log'
-    # if not os.path.exists(log_dir):
-    #     os.makedirs(log_dir)
-    # log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}_{N_TRIALS}_{N_JOBS}.txt')
-    # logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
+    clear_directory("temp")
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    log_dir = '_log'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}_{N_TRIALS}_{N_JOBS}.txt')
+    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
-    # sampler = optuna.samplers.TPESampler(seed=10)
-    # study = optuna.create_study(direction='minimize', sampler=sampler)
-    # study.enqueue_trial(initial_guess)
-    # study.optimize(objective, n_trials=N_TRIALS, n_jobs=N_JOBS, callbacks=[logging_callback])
+    sampler = optuna.samplers.TPESampler(seed=10)
+    study = optuna.create_study(direction='minimize', 
+                                sampler=sampler,
+                                pruner=MedianPruner()  
+                                )
+    study.enqueue_trial(initial_guess)
+    study.optimize(objective, n_trials=N_TRIALS, n_jobs=N_JOBS, callbacks=[logging_callback])
     # try:
     #     fig = optuna.visualization.plot_optimization_history(study)
     #     fig.show()
     # except:
     #     pass
     
-    # # Get the best parameters
-    # best_params = study.best_params
-    # print('Best parameters:', best_params)
-    # with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
-    #     pickle.dump(study, f)
+    # Get the best parameters
+    best_params = study.best_params
+    print('Best parameters:', best_params)
+    with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
+        pickle.dump(study, f)
 
     # ================================= run best param 
-    best_params = {'maxSpeed': 34.81165096351248, 'minGap': 1.5938065104844015, 'accel': 3.022346538786358, 'decel': 1.0428115924602528, 'tau': 0.5317315149807879, 'lcSublane': 0.002929023905628436, 'maxSpeedLat': 1.2782516047399735, 'lcAccelLat': 1.8797774681211579, 'minGapLat': 0.6986271674187223, 'lcStrategic': 1.7903870628938083, 'lcCooperative': 0.9306777856904532, 'lcPushy': 0.7751464178714065, 'lcImpatience': 0.9811640612008771, 'lcSpeedGain': 0.3439350590925962}
-    update_sumo_configuration(best_params)
-    run_sumo(sim_config=SCENARIO+".sumocfg", fcd_output=SCENARIO+".out.xml")
+    # best_params = {'maxSpeed': 34.81165096351248, 'minGap': 1.5938065104844015, 'accel': 3.022346538786358, 'decel': 1.0428115924602528, 'tau': 0.5317315149807879, 'lcSublane': 0.002929023905628436, 'maxSpeedLat': 1.2782516047399735, 'lcAccelLat': 1.8797774681211579, 'minGapLat': 0.6986271674187223, 'lcStrategic': 1.7903870628938083, 'lcCooperative': 0.9306777856904532, 'lcPushy': 0.7751464178714065, 'lcImpatience': 0.9811640612008771, 'lcSpeedGain': 0.3439350590925962}
+    # update_sumo_configuration(best_params)
+    # run_sumo(sim_config=SCENARIO+".sumocfg", fcd_output=SCENARIO+".out.xml")

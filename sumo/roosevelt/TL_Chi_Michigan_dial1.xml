@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-03-19 16:23:55 by Eclipse SUMO netedit Version 1.22.0
+<neteditConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="C:\Users\jihun.han\Documents\SUMO study\Chi_DOT_part\Chi_Clinton_and_Canal.net.xml"/>
+    </input>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="0"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.50"/>
+        <rectangular-lane-cut value="0"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="0"/>
+    </pedestrian>
+
+</neteditConfiguration>
+-->
+
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <tlLogic id="TL_Michigan" type="NEMA" programID="0" offset="0">
+		<phase duration="105" state="grrrgrrrgrrrgrrG" minDur="7"  maxDur="13" vehExt="3" yellow="3" red="1" name="1"/>
+        <phase duration="105" state="grrrgGGrgrrrgrrr" minDur="33" maxDur="33" yellow="3" red="2" name="2"/>
+        <phase duration="105" state="grrGgrrrgrrrgrrr" minDur="7" maxDur="7" yellow="3" red="1" name="3"/>
+        <phase duration="105" state="grrrgrrrGGGrgrrr" minDur="34" maxDur="34" yellow="3" red="2" name="4"/>
+        <phase duration="105" state="grrrgrrGgrrrgrrr" minDur="7" maxDur="13" vehExt="3" yellow="3" red="1" name="5"/>
+        <phase duration="105" state="grrrgrrrgrrrGGGr" minDur="33" maxDur="33" yellow="3" red="2" name="6"/>
+        <phase duration="105" state="grrrgrrrgrrGgrrr" minDur="7" maxDur="10" vehExt="3" yellow="3" red="1" name="7"/>
+        <phase duration="105" state="GGGrgrrrgrrrgrrr" minDur="31" maxDur="31" yellow="3" red="2" name="8"/>
+
+        <param key="barrier2Phases" value="2,6"/>
+        <param key="barrierPhases" value="4,8"/>
+        <param key="ring1" value="1,2,3,4"/>
+        <param key="ring2" value="5,6,7,8"/>
+    </tlLogic>
+</additional>

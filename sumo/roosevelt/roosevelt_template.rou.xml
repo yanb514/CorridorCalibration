@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    
+    
+    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0" laneChangeModel="SL2015" latAlignment="arbitrary" lcKeepRight="0.0" lcOvertakeRight="0.0" maxSpeed="20.55" minGap="2.5" accel="1.0" decel="2" tau="1.4" lcSublane="1.0" maxSpeedLat="5" lcAccelLat="0.7" minGapLat="0.4" lcStrategic="10" lcCooperative="1.0" lcPushy="0.4" lcImpatience="0." lcSpeedGain="1.5"/>
+    <vType id="cav" length="4.3" carFollowModel="IDM" emergencyDecel="4.0" laneChangeModel="SL2015" latAlignment="arbitrary" lcKeepRight="0.0" lcOvertakeRight="0.0" maxSpeed="20.55" minGap="2.5" accel="1.0" decel="2" tau="1.4" lcSublane="1.0" maxSpeedLat="5" lcAccelLat="1.2" minGapLat="0.4" lcStrategic="50" lcCooperative="1.0" lcPushy="0.4" lcImpatience="0.9" lcSpeedGain="1.5"/>
+    <route id="0" edges="435561321#0 -435561326#0 -435561323 435561323 435561326#0 314011259#1"/>
+    
+    
+    <route id="1" edges="435381830#0 377897003#1 435381826#0 163148368#1 56150140 435542925#0 980841225#1 435542921#0 435542924#1 435542920 435542901#1 435542903#0 143926851#1 990453574#1 314011259#1"/>
+    
+    
+    <route id="2" edges="435561321#0 56150137#1 56150137#2 435561310#0 488357314#1 435542902#0 435542919 626290592 277219207#0 904944343#1 435542922#0 435542918#1 1243008255 23887479 435381827#0 377897004#1 435381825#0 1000784669#1"/>
+    
+    
+    <route id="3" edges="435381830#0 377897003#1 435381826#0 163148368#1 56150140 435542925#0 980841225#1 435542921#0 435542924#1 435542920 435542901#1 435542903#0 143926851#1 990453574#1 -435561326#0 -435561323 435561323 435561326#0 314011259#1"/>
+    
+    
+    <route id="4" edges="435561321#0 -435561326#0 -435561323 435561323 435561326#0 56150137#1 56150137#2 435561310#0 488357314#1 435542902#0 435542919 626290592 277219207#0 904944343#1 435542922#0 435542918#1 1243008255 23887479 435381827#0 377897004#1 435381825#0 1000784669#1"/>
+    
+    
+    <route id="5" edges="435381830#0 377897003#1 435381826#0 163148368#1 56150140 435542925#0 980841225#1 435542921#0 435542924#1 435542920 435542901#1 435542903#0 143926851#1 990453574#1 -435561326#0 -435561323 435561323 435561326#0 56150137#1 56150137#2 435561310#0 488357314#1 435542902#0 435542919 626290592 277219207#0 904944343#1 435542922#0 435542918#1 1243008255 23887479 435381827#0 377897004#1 435381825#0 1000784669#1"/>
+    
+
+    <flow id="flow_0" route="0" begin="0" end="600" vehsPerHour="438" departSpeed="desired" type="hdv"/>
+    <flow id="flow_1" route="1" begin="0" end="600" vehsPerHour="532" departSpeed="desired" type="hdv"/>
+    <flow id="flow_2" route="2" begin="0" end="600" vehsPerHour="496" departSpeed="desired" type="hdv"/>
+    <flow id="flow_3" route="3" begin="0" end="600" vehsPerHour="504" departSpeed="desired" type="hdv"/>
+    <flow id="flow_4" route="4" begin="0" end="600" vehsPerHour="534" departSpeed="desired" type="hdv"/>
+    <flow id="flow_5" route="5" begin="0" end="600" vehsPerHour="519" departSpeed="desired" type="hdv"/>
+</routes>

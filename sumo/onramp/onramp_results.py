@@ -35,20 +35,20 @@ best_param_map = {
     "gt_sublane": {"carFollowModel": "IDM",
         "maxSpeed": 30.55,
         "minGap": 2.5,
-        "accel": 1.5,
+        "accel": 1.0, #1.5
         "decel": 2,
         "tau": 1.4,
         "emergencyDecel": 4.0,
         "laneChangeModel": "SL2015",
         "lcSublane": 1.0,
         "latAlignment": "arbitrary",
-        "maxSpeedLat": 1.4,
-        "lcAccelLat": 0.7,
+        "maxSpeedLat": 5, #1.4
+        "lcAccelLat": 1.2, #0.7
         "minGapLat": 0.4,
-        "lcStrategic": 10.0,
-        "lcCooperative": 1.0,
+        "lcStrategic": 50, #10
+        "lcCooperative": 1.0, #1.0
         "lcPushy": 0.4,          # Replaces lcAssertive in sublane model
-        "lcImpatience": 0.9,
+        "lcImpatience": 0.9,  #0.9
         "lcSpeedGain": 1.5,
         "lcKeepRight": 0.0,
         "lcOvertakeRight": 0.0
@@ -149,13 +149,13 @@ def run_with_param(parameter, exp_label="", rerun=True, plot_ts=False, plot_det=
         else:
             onramp.run_sumo(sim_config = "onramp.sumocfg", fcd_output =fcd_name+".xml")
 
-        sim_output = reader.extract_sim_meas(measurement_locations=[location for location in measurement_locations])
-        reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+".csv") #, link_names=mainline)
-        macro_data = macro.compute_macro(fcd_name+".csv", dx=10, dt=10, start_time=0, end_time=480, start_pos=0, end_pos=1300, 
-                                        save=True, plot=plot_macro)
-        if plot_macro:
-            fig, axs = macro.plot_macro_sim(macro_data)
-            fig.savefig(f"figures/{exp_label}_macro.png", dpi=100, bbox_inches='tight') 
+        # sim_output = reader.extract_sim_meas(measurement_locations=[location for location in measurement_locations])
+        # reader.parse_and_reorder_xml(xml_file=fcd_name+".xml", output_csv=fcd_name+".csv") #, link_names=mainline)
+        # macro_data = macro.compute_macro(fcd_name+".csv", dx=10, dt=10, start_time=0, end_time=480, start_pos=0, end_pos=1300, 
+        #                                 save=True, plot=plot_macro)
+        # if plot_macro:
+        #     fig, axs = macro.plot_macro_sim(macro_data)
+        #     fig.savefig(f"figures/{exp_label}_macro.png", dpi=100, bbox_inches='tight') 
 
     # plotting
     if plot_ts:
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
     # ============ generate RMSPE results =========================
     EXP = "gt_sublane"
-    run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, plot_ts=False, plot_det=1, plot_macro=1)
+    run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, plot_ts=False, plot_det=1, plot_macro=0)
     # training_rmspe()
     # validation_rmspe(EXP)
     # lane_delay("lanearea.out.xml")

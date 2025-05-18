@@ -2,7 +2,7 @@
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     
     
-    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0" maxSpeed="34.81165096351248" minGap="1.5938065104844015" accel="3.022346538786358" decel="1.0428115924602528" tau="0.5317315149807879" lcSublane="0.002929023905628436" maxSpeedLat="1.2782516047399735" lcAccelLat="1.8797774681211579" minGapLat="0.6986271674187223" lcStrategic="1.7903870628938083" lcCooperative="0.9306777856904532" lcPushy="0.7751464178714065" lcImpatience="0.9811640612008771" lcSpeedGain="0.3439350590925962" />
+    <vType id="hdv" length="4.3" carFollowModel="IDM" emergencyDecel="4.0" />
     
 
     

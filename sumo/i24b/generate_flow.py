@@ -1,5 +1,5 @@
 '''
-generate flows in .rou.xml by detector measurements
+generate flows in .rou.xml given detector measurements
 quick and easy, not precise
 '''
 import xml.etree.ElementTree as ET
