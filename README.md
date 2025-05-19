@@ -5,6 +5,7 @@
 
 This tool is designed to calibrate microscopic traffic flow models using macroscopic (aggregated) data from stationary detectors. It uses a SUMO-in-the-loop calibration framework with the goal of replicating observed macroscopic traffic features. A set of performance measures are selected to evaluate the models' ability to replicate traffic flow characteristics. A case study to calibrate the flow on a segment of Interstate 24 is included.
 
+![corridor setup](i24_corridor_2.png)
 ---
 
 ## **Acknowledgments**  
@@ -35,7 +36,7 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 - Customizable evaluation metrics 
 - Scenario bank: [TODO]
   - `onramp`: a synthetic highway on-ramp merging scenario
-  - `i24`: I-24 Westbound between postmile xx to xx
+  - `i24`: I-24 Westbound between postmile 54.1 to 57.4
   - `i24b`: I-24 Westbound between postmile xx to xx, to support benchmarking work.
   - `roosevelt` (coming soon): Chicago Roosevelt Rd from Canal to Michigan with SPaT. 
 
@@ -47,6 +48,7 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 This package is built on Python 3.11, and requires installation of [optuna](https://optuna.org/), and [sumo](https://sumo.dlr.de/docs/Installing/index.html)
 
 ## **Usage**  
+Follow these steps to prepare a calibration run. Make sure first the files are organized according to the following directory:
 
 ### Directory structure
 ```
@@ -74,7 +76,7 @@ CorridorCalibration
 │           │   ...
 ```
 
-### Data download and processing
+### 1. Data download and processing
 The RDS detector data for the I-24 scenario is from Tennessee Department of Transportation, and can be downloaded from the [I-24 MOTION project website](https://i24motion.org). 
 
 The raw RDS data is filtered and processed using:
@@ -82,7 +84,7 @@ The raw RDS data is filtered and processed using:
 # write original dat.gz file to a .csv file. Please see inline documentation
 utils_data_read.read_and_filter_file()
 ```
-### Configuration setup
+### 2. Configuration setup
 Create a `config.json` file under `sumo/` with the following template:
 ```json
 {
@@ -152,18 +154,35 @@ Create a `config.json` file under `sumo/` with the following template:
     }
 }
 ```
-You may set `N_TRIALS` and `N_JOBS` based on your computational resources.
+Here are a few definitions inside the config setting:
+| Setting | Description |
+|----------------|-----------------|
+| `EXP`       | "1a", "1b", ..., "3b", "3c". 1=θ_CF, 2=θ_LC, 3=both using measurement a=flow, b=velocity, c=occupancy. default: "3b" (calibrate both θ_CF and θ_LC using speed measurements) |
+| `N_TRIALS`  | The number of trials for each process in `optuna.study.Study.optimize()` |
+| `N_JOBS`    | The number of parallel jobs in `optuna.study.Study.optimize()`   |
+| `DEFAULT_PARAMS` | These default values will overwrite (reset) the values in `SCENARIO.rou.xml` at the beginning of each calibration run|
+| `cf` | Car-following parameters. default CF model is IDM |
+| `lc` | Lane-change parameters. default LC model is SL2015 |
+| `PARAMS_RANGE` | [min, max] for each parameter|
 
-### Running calibration  
-To run the calibration of any scenario, navigate to the SCENARIO folder and run `SCENARIO_calibrate.py`. For example, to run the `i24` scenario:
+
+
+### 3. Running calibration  
+To run the calibration of any scenario, navigate to the SCENARIO folder and run `SCENARIO_calibrate.py`. For example, to run the `i24b` scenario:
 ```bash  
-cd sumo/i24
-python i24_calibrate.py
+cd sumo/i24b
+python i24b_calibrate.py
 ```  
 The calibration progress such as current best parameters will be saved in `sumo/i24/_log`.
 
-### Evaluation and plotting
-All evaluation related computations are located in `sumo/SCENARIO/SCENARIO_results.py`.
+### 4. Evaluation and plotting (TODO: i24b in progress)
+All evaluation related computations are located in `sumo/SCENARIO/SCENARIO_results.py`. Current evaluation & visualization support:
+1. Calibrated vs. measured speed at the locations of stationary sensors
+![detector speeds](det_b.png)
+2. Macroscopic quantities (speed, flow, density)
+![macroscopic quantities](asm_5hr.png)
+3. Lane-specific travel time
+![travel time](travel_time_rds.png)
 
 ### Key utility functions
 In summary,
@@ -188,5 +207,6 @@ sumo -c SCENARIO.sumocfg
 
 ### TODOS
 - temp files handling in i24 and onramp scenarios
-- 
+- add calibrated results for i24b scenario (i24b_results.py and plotting)
+- calibrate only westbound?
 ---

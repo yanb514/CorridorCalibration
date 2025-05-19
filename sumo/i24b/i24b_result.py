@@ -28,23 +28,16 @@ warnings.filterwarnings("ignore")
 with open('../config.json', 'r') as config_file:
     config = json.load(config_file)
 
-computer_name = os.environ.get('HOSTNAME', 'Unknown')
-
-if "CSI" in computer_name:
-    SUMO_EXE = config['SUMO_PATH']["CSI"]
-elif "VMS" in computer_name:
-    SUMO_EXE = config['SUMO_PATH']["VMS"]
-else: # run on SOL
-    SUMO_EXE = config['SUMO_PATH']["SOL"]
+SUMO_EXE = os.getenv("SUMO_PATH", config['SUMO_PATH'])  # Fallback to config
 
 SCENARIO = "i24b"
-RDS_DIR = "detector_measurements_i24wRDSdetectors.csv"
+RDS_DIR = config[SCENARIO]["RDS_DIR"] # directory of the RDS data
 SUMO_DIR = os.path.dirname(os.path.abspath(__file__)) # current script directory
 
 
-best_param_map = {
-    'default': {'maxSpeed': 34.91628705652602,'minGap': 2.9288888706657783,'accel': 1.0031145478483796, 'decel': 2.9618821510422406,'tau': 1.3051261247487569,'lcStrategic': 1.414, 'lcCooperative': 1.0,'lcAssertive': 1.0,'lcSpeedGain': 3.76,'lcKeepRight': 0.0,'lcOvertakeRight': 0.877},
-    "3b": {'maxSpeed': 35.46631186967486, 'minGap': 2.94390525189298, 'accel': 2.3655452248462066, 'decel': 3.207636533267079, 'tau': 1.6603715426741472, 'lcStrategic': 0.5091719209419492, 'lcCooperative': 0.8854467728463593, 'lcAssertive': 4.815590691539943, 'lcSpeedGain': 1.1639111046014528},
+best_param_map = { # TODO: read from calibration_result
+    'default': config["DEFAULT_PARAMS"],
+    "3b": {'maxSpeed': 34.72185955968814, 'minGap': 1.295900993995676, 'accel': 2.3132922370096063, 'decel': 1.8443042297988792, 'tau': 1.681989476492903, 'lcSublane': 8.031266669695496, 'maxSpeedLat': 5.551852173272676, 'lcAccelLat': 1.4899061645158596, 'minGapLat': 2.437640158503997, 'lcStrategic': 6.2630157083167015, 'lcCooperative': 2.490876662995877, 'lcPushy': 0.6017363873188605, 'lcImpatience': 0.37524842223505894, 'lcSpeedGain': 0.1475478299582167},
     }
 
 def run_with_param(parameter, exp_label="", rerun=True, lane_by_lane_macro=False, plot_ts=False, plot_det=False, plot_macro=False):
@@ -54,16 +47,17 @@ def run_with_param(parameter, exp_label="", rerun=True, lane_by_lane_macro=False
     ** convert FCD to macro data
     ** save macro data
     '''
-    fcd_name = "fcd_i24_" + exp_label
+    fcd_name = f"fcd_{SCENARIO}_" + exp_label
     folder_path = f'simulation_result/{exp_label}'
     fcd_file = fcd_name+".xml"
     traj_file = fcd_name+"_mainline.csv"
     trajectory_file_name = traj_file.split(".")[0]
 
     if rerun: # save things in simulation_result/
+        print("Running SUMO...")
         i24.update_sumo_configuration(best_param_map['default'])
         i24.update_sumo_configuration(parameter)
-        i24.run_sumo(sim_config = "I24_scenario.sumocfg", fcd_output =fcd_name+"_full.xml")
+        i24.run_sumo(sim_config = f"{SCENARIO}.sumocfg") #, fcd_output =fcd_name+"_full.xml")
 
         # # filter fcd data with start time and end time
         # # SUMO simulates 4AM-10AM, filter 5-10AM
@@ -101,11 +95,11 @@ def run_with_param(parameter, exp_label="", rerun=True, lane_by_lane_macro=False
         # if os.path.exists(fcd_file):
         #     shutil.move(fcd_file, os.path.join(folder_path, fcd_file))
 
-        # # move detector outputs
-        # files_to_move = glob.glob('*.out.xml') + glob.glob(f'*_{exp_label}.csv')
-        # for file_name in files_to_move:
-        #     if os.path.exists(file_name):
-        #         shutil.move(file_name, os.path.join(folder_path, file_name))
+        # move detector outputs
+        files_to_move = glob.glob('*.out.xml') + glob.glob(f'*_{exp_label}.csv')
+        for file_name in files_to_move:
+            if os.path.exists(file_name):
+                shutil.move(file_name, os.path.join(folder_path, file_name))
 
         # # move all csv files that contains {fcd_name}
         # files_to_move = glob.glob(f'*{fcd_name}*.csv')
@@ -312,23 +306,23 @@ if __name__ == "__main__":
     measured_output = reader.rds_to_matrix_i24b(rds_file=RDS_DIR, det_locations=det_locations)
 
     # ===== rerun and save data ============= 
-    for EXP in ["1a","1b", "1c","2a","2b","2c","3a","3b", "3c"]:
-        # run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, lane_by_lane_macro=1,plot_ts=0, plot_det=0, plot_macro=0)
-        # training_rmspe(EXP)
+    for EXP in ["3b"]:
+        run_with_param(best_param_map[EXP], exp_label=EXP, rerun=1, lane_by_lane_macro=0,plot_ts=0, plot_det=0, plot_macro=0)
+        training_rmspe(EXP)
         validation_rmspe(EXP)
         print("\n")
 
     # ===== plot detector line plot ============= 
-    # save_path = r'C:\Users\yanbing.wang\Documents\CorridorCalibration\figures\TRC-i24\det_c.png'
-    # fig = None
-    # axes = None
-    # quantity = "speed"
-    # experiments = ["RDS", "1c", "2c", "3c"]
-    # for exp_label in experiments:
-    #     folder_path = f'simulation_result/{exp_label}'
-    #     fig, axes = vis.plot_line_detectors(folder_path, RDS_DIR, measurement_locations, quantity, fig, axes, exp_label) # read csv files, continuously adding plots to figure
-    # # save
-    # fig.savefig(save_path, dpi=300, bbox_inches='tight')  # Save with high resolution
+    save_path = "det_sim.png"
+    fig = None
+    axes = None
+    quantity = "speed"
+    experiments = ["RDS", "3b"]
+    for exp_label in experiments:
+        folder_path = f'simulation_result/{exp_label}'
+        fig, axes = vis.plot_line_detectors(folder_path, RDS_DIR, det_locations, quantity, fig, axes, exp_label) # read csv files, continuously adding plots to figure
+    # save
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')  # Save with high resolution
     # plt.show()
 
     # ===== plot 9-grid plot ============= 

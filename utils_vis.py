@@ -832,7 +832,7 @@ def plot_line_detectors_sim(sumo_dir, measurement_locations, quantity="volume", 
 
 
 
-def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="volume", fig=None, axes=None, label=''):
+def plot_line_detectors(sumo_dir, rds_dir, measurement_locations, quantity="speed", fig=None, axes=None, label=''):
     """
     Iteratively plot detector output from SUMO, layering multiple detector data
     For I-24 scenario
