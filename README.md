@@ -34,10 +34,10 @@ This tool is designed to calibrate microscopic traffic flow models using macrosc
 - Utilize a global optimization algorithm 
 - Support parallel computation
 - Customizable evaluation metrics 
-- Scenario bank: [TODO]
+- Scenarios:
   - `onramp`: a synthetic highway on-ramp merging scenario
   - `i24`: I-24 Westbound between postmile 54.1 to 57.4
-  - `i24b`: I-24 Westbound between postmile xx to xx, to support benchmarking work.
+  - `i24b`: I-24 Westbound between postmile 58.7 to 62.9, to support benchmarking work.
   - `roosevelt` (coming soon): Chicago Roosevelt Rd from Canal to Michigan with SPaT. 
 
 ---
@@ -157,12 +157,12 @@ Create a `config.json` file under `sumo/` with the following template:
 Here are a few definitions inside the config setting:
 | Setting | Description |
 |----------------|-----------------|
-| `EXP`       | "1a", "1b", ..., "3b", "3c". 1=θ_CF, 2=θ_LC, 3=both using measurement a=flow, b=velocity, c=occupancy. default: "3b" (calibrate both θ_CF and θ_LC using speed measurements) |
+| `cf` | Car-following parameters. default CF model is IDM |
+| `lc` | Lane-change parameters. default LC model is SL2015 |
+| `EXP`       | "1a", "1b", ..., "3b", "3c". 1=cf params, 2=lc params, 3=both using measurement a=flow, b=velocity, c=occupancy. default: "3b" (calibrate both CF and LC params using speed measurements) |
 | `N_TRIALS`  | The number of trials for each process in `optuna.study.Study.optimize()` |
 | `N_JOBS`    | The number of parallel jobs in `optuna.study.Study.optimize()`   |
 | `DEFAULT_PARAMS` | These default values will overwrite (reset) the values in `SCENARIO.rou.xml` at the beginning of each calibration run|
-| `cf` | Car-following parameters. default CF model is IDM |
-| `lc` | Lane-change parameters. default LC model is SL2015 |
 | `PARAMS_RANGE` | [min, max] for each parameter|
 
 
