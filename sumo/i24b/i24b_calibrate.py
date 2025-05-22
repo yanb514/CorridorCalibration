@@ -277,36 +277,36 @@ if __name__ == "__main__":
     measured_output = reader.rds_to_matrix_i24b(rds_file=RDS_DIR, det_locations=det_locations)
 
     # ================================= run default 
-    update_sumo_configuration(initial_guess)
-    run_sumo(sim_config=SCENARIO+".sumocfg")
+    # update_sumo_configuration(initial_guess)
+    # run_sumo(sim_config=SCENARIO+".sumocfg")
     
-    # ================================= Create a study object and optimize the objective function
-    clear_directory("temp")
-    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    log_dir = '_log'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}_{N_TRIALS}_{N_JOBS}.txt')
-    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
+    # # ================================= Create a study object and optimize the objective function
+    # clear_directory("temp")
+    # current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    # log_dir = '_log'
+    # if not os.path.exists(log_dir):
+    #     os.makedirs(log_dir)
+    # log_file = os.path.join(log_dir, f'{current_time}_optuna_log_{EXP}_{N_TRIALS}_{N_JOBS}.txt')
+    # logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
-    sampler = optuna.samplers.TPESampler(seed=10)
-    study = optuna.create_study(direction='minimize', 
-                                sampler=sampler,
-                                pruner=MedianPruner()  
-                                )
-    study.enqueue_trial(initial_guess)
-    study.optimize(objective, n_trials=N_TRIALS, n_jobs=N_JOBS, callbacks=[logging_callback])
-    # try:
-    #     fig = optuna.visualization.plot_optimization_history(study)
-    #     fig.show()
-    # except:
-    #     pass
+    # sampler = optuna.samplers.TPESampler(seed=10)
+    # study = optuna.create_study(direction='minimize', 
+    #                             sampler=sampler,
+    #                             pruner=MedianPruner()  
+    #                             )
+    # study.enqueue_trial(initial_guess)
+    # study.optimize(objective, n_trials=N_TRIALS, n_jobs=N_JOBS, callbacks=[logging_callback])
+    # # try:
+    # #     fig = optuna.visualization.plot_optimization_history(study)
+    # #     fig.show()
+    # # except:
+    # #     pass
     
-    # Get the best parameters
-    best_params = study.best_params
-    print('Best parameters:', best_params)
-    with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
-        pickle.dump(study, f)
+    # # Get the best parameters
+    # best_params = study.best_params
+    # print('Best parameters:', best_params)
+    # with open(f'calibration_result/study_{EXP}.pkl', 'wb') as f:
+    #     pickle.dump(study, f)
 
     # ================================= run best param 
     # best_params = {'maxSpeed': 34.81165096351248, 'minGap': 1.5938065104844015, 'accel': 3.022346538786358, 'decel': 1.0428115924602528, 'tau': 0.5317315149807879, 'lcSublane': 0.002929023905628436, 'maxSpeedLat': 1.2782516047399735, 'lcAccelLat': 1.8797774681211579, 'minGapLat': 0.6986271674187223, 'lcStrategic': 1.7903870628938083, 'lcCooperative': 0.9306777856904532, 'lcPushy': 0.7751464178714065, 'lcImpatience': 0.9811640612008771, 'lcSpeedGain': 0.3439350590925962}

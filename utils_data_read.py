@@ -169,23 +169,25 @@ def rds_to_matrix_i24b(rds_file, det_locations ):
     
     # Convert 'Time' column to datetime (assuming 'Time' is in minutes)
     df['Time'] = pd.to_datetime(df['Time'], unit='m')
+    total_duration = df['Time'].max() - df['Time'].min()
+    n_intervals = int(total_duration.total_seconds()/30)
     
     # Extract milemarker and lane from detector locations
-    milemarkers = [location.split('-')[0] for location in det_locations]
-    lanes = [int(location.split('_')[-1]) for location in det_locations]
-    
+    df = df[df['Detector'].isin(det_locations)]
+
     # Initialize macro_data
     macro_data = {"speed": [], "flow": []}
 
-    for milemarker, lane in zip(milemarkers, lanes):
-        # Filter rows based on milemarker and lane
-        filtered_df = df[(df['Detector'].str.contains(f"{milemarker}-eastbound_{lane}"))]
-        
+    for det_location in det_locations:
+
+        filtered_df = df[(df['Detector'].str.contains(det_location))]
+        # print(filtered_df['Detector'])
+
         if filtered_df.empty:
-            print(f"No data for milemarker {milemarker} lane {lane}")
+            print(f"No data for {det_location}")
             # Append NaN arrays if no data is found
-            macro_data["speed"].append(np.full((1, 20), np.nan))  # 20 time intervals (10 minutes * 2 intervals per minute)
-            macro_data["flow"].append(np.full((1, 20), np.nan))
+            macro_data["speed"].append(np.full((1, n_intervals), np.nan))  # 20 time intervals (10 minutes * 2 intervals per minute)
+            macro_data["flow"].append(np.full((1, n_intervals), np.nan))
         else:
             # Aggregate by 0.5-minute intervals
             aggregated = filtered_df.groupby(pd.Grouper(key='Time', freq='30s')).agg({
